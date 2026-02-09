@@ -1,5 +1,6 @@
 #include "gollum.hpp"
 
+#include <hyprland/src/debug/log/Logger.hpp>
 #include <hyprland/src/helpers/math/Direction.hpp>
 #include <hyprland/src/layout/algorithm/Algorithm.hpp>
 #include <hyprland/src/layout/space/Space.hpp>
@@ -47,11 +48,12 @@ void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
 
-    static auto PGRID = CConfigValue<Hyprlang::VEC2>("plugin:gollum:grid");
-    const int   W     = (*PGRID).x;
-    const int   H     = (*PGRID).y;
-    const auto  N     = m_gollumData.size();
-    const auto  AREA  = m_parent->space()->workArea();
+    static auto  PGRID = CConfigValue<Hyprlang::VEC2>("plugin:gollum:grid");
+    static auto  PGROW = CConfigValue<Hyprlang::INT>("plugin:gollum:grow");
+    const size_t W     = (*PGRID).x;
+    const size_t H     = (*PGRID).y;
+    const auto   N     = m_gollumData.size();
+    const auto   AREA  = m_parent->space()->workArea();
 
     if ((W < 2 && H < 2) || N == 1) {
         for (size_t i = 0; i < N; ++i) {
@@ -71,24 +73,27 @@ void CGollumAlgorithm::recalculate() {
 
     std::map<size_t, std::vector<SP<SGollumData>>> cols;
 
-    size_t                                         x = 0;
-    size_t                                         y = 0;
+    int                                            x = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
+        if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
+            --x;
+        if (x <= 0)
+            x = W - 1;
+        if ((i == 0 || i == W * H - (H - 1)) && cols[0].size() < H)
+            x = 0;
         cols[x].emplace_back(DATA);
-        if (++y >= H) {
-            y = 0;
-            if (++x >= W)
-                x = 0;
+    }
+
+    size_t xmax = W;
+    if (*PGROW <= 0 && cols.size() < W) {
+        size_t empty = W - cols.size();
+        for (size_t i = 0; i < W; ++i) {
+            cols[i + 1] = cols[i + 1 + empty];
+            cols[i + 1 + empty].clear();
         }
+        xmax = W - empty;
     }
-    size_t xmax = cols.size();
-    size_t ymax = 0;
-    for (auto& [x, col] : cols) {
-        if (col.size() > ymax)
-            ymax = col.size();
-    }
-    double w = AREA.w / xmax;
 
     for (auto& [x, col] : cols) {
         for (size_t y = 0; y < col.size(); ++y) {
@@ -99,7 +104,14 @@ void CGollumAlgorithm::recalculate() {
             const auto WINDOW = TARGET->window();
             if (!WINDOW)
                 continue;
-            double     h   = AREA.h / col.size();
+            double w = AREA.w / xmax;
+            double h = AREA.h / col.size();
+            if (x == 0 && y == 0 && *PGROW > 0) {
+                for (size_t i = 0; i < cols.size(); ++i) {
+                    if (cols[i].empty())
+                        w += AREA.w / xmax;
+                }
+            }
             const auto BOX = CBox{AREA.x + x * w, AREA.y + y * h, w, h};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
@@ -146,6 +158,8 @@ void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir
     } else if (dir == Math::DIRECTION_DOWN && it != --m_gollumData.end()) {
         auto next = std::next(it);
         swapTargets(t, next->get()->target.lock());
+    } else if (dir == Math::DIRECTION_LEFT || dir == Math::DIRECTION_RIGHT) {
+        swapTargets(t, m_gollumData[0]->target.lock());
     }
     if (silent) {
         const auto OLD = getClosestNode(POS);
