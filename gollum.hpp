@@ -7,6 +7,7 @@
 #include <hyprland/src/layout/algorithm/TiledAlgorithm.hpp>
 #include <hyprland/src/helpers/memory/Memory.hpp>
 #include <hyprland/src/managers/HookSystemManager.hpp>
+#include <hyprland/src/config/ConfigValue.hpp>
 
 namespace Layout {
     class CAlgorithm;
@@ -48,5 +49,9 @@ namespace Layout::Tiled {
 
         SP<SGollumData>              dataFor(SP<ITarget> t);
         SP<SGollumData>              getClosestNode(const Vector2D&);
+
+        Hyprlang::STRING             getStrOpt(const std::string& opt);
+        Hyprlang::INT                getIntOpt(const std::string& opt);
+        Hyprlang::VEC2               getVec2Opt(const std::string& opt);
     };
 }
