@@ -5,8 +5,8 @@
 #include <hyprland/src/layout/space/Space.hpp>
 #include "hyprland/src/layout/target/WindowTarget.hpp"
 #include <hyprland/src/desktop/state/FocusState.hpp>
-
-#include <algorithm>
+#include <hyprland/src/config/ConfigValue.hpp>
+#include <hyprland/src/config/ConfigManager.hpp>
 
 using namespace Layout;
 using namespace Layout::Tiled;
@@ -46,19 +46,64 @@ void CGollumAlgorithm::resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRec
 void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
-    const auto N    = m_gollumData.size();
-    const auto AREA = m_parent->space()->workArea();
+
+    static auto PGRID = CConfigValue<Hyprlang::VEC2>("plugin:gollum:grid");
+    const int   W     = (*PGRID).x;
+    const int   H     = (*PGRID).y;
+    const auto  N     = m_gollumData.size();
+    const auto  AREA  = m_parent->space()->workArea();
+
+    if ((W < 2 && H < 2) || N == 1) {
+        for (size_t i = 0; i < N; ++i) {
+            const auto& DATA   = m_gollumData[i];
+            const auto  TARGET = DATA->target.lock();
+            if (!TARGET)
+                continue;
+            const auto WINDOW = TARGET->window();
+            if (!WINDOW)
+                continue;
+            const auto BOX = CBox{AREA.x, AREA.y + i * AREA.h / N, AREA.w, AREA.h / N};
+            DATA->box      = BOX;
+            TARGET->setPositionGlobal(BOX);
+        }
+        return;
+    }
+
+    std::map<size_t, std::vector<SP<SGollumData>>> cols;
+
+    size_t                                         x = 0;
+    size_t                                         y = 0;
     for (size_t i = 0; i < N; ++i) {
-        const auto& DATA   = m_gollumData[i];
-        const auto  TARGET = DATA->target.lock();
-        if (!TARGET)
-            continue;
-        const auto WINDOW = TARGET->window();
-        if (!WINDOW)
-            continue;
-        const auto BOX = CBox{AREA.x, AREA.y + i * AREA.h / N, AREA.w, AREA.h / N};
-        DATA->box      = BOX;
-        TARGET->setPositionGlobal(BOX);
+        const auto& DATA = m_gollumData[i];
+        cols[x].emplace_back(DATA);
+        if (++y >= H) {
+            y = 0;
+            if (++x >= W)
+                x = 0;
+        }
+    }
+    size_t xmax = cols.size();
+    size_t ymax = 0;
+    for (auto& [x, col] : cols) {
+        if (col.size() > ymax)
+            ymax = col.size();
+    }
+    double w = AREA.w / xmax;
+
+    for (auto& [x, col] : cols) {
+        for (size_t y = 0; y < col.size(); ++y) {
+            const auto& DATA   = col[y];
+            const auto  TARGET = DATA->target.lock();
+            if (!TARGET)
+                continue;
+            const auto WINDOW = TARGET->window();
+            if (!WINDOW)
+                continue;
+            double     h   = AREA.h / col.size();
+            const auto BOX = CBox{AREA.x + x * w, AREA.y + y * h, w, h};
+            DATA->box      = BOX;
+            TARGET->setPositionGlobal(BOX);
+        }
     }
 }
 

@@ -21,6 +21,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hyprgollum] Version mismatch");
     }
 
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:grid", Hyprlang::VEC2{0, 0});
+
     if (!HyprlandAPI::addTiledAlgo(PHANDLE, "gollum", &typeid(Layout::Tiled::CGollumAlgorithm), [] { return makeUnique<Layout::Tiled::CGollumAlgorithm>(); })) {
         HyprlandAPI::addNotification(PHANDLE, "[hyprgollum] addTiledAlgo failed! Can't proceed.", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
         throw std::runtime_error("[hyprgollum] addTiledAlgo failed");
