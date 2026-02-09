@@ -17,6 +17,19 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
 }
 
 void CGollumAlgorithm::movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint) {
+    if (g_layoutManager->dragController()->wasDraggingWindow()) {
+        const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
+        if (const auto NODE = getClosestNode(MOUSECOORDS); NODE) {
+            auto       t      = NODE->target.lock();
+            auto       it     = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
+            const auto MIDDLE = t->position().middle();
+            if (MIDDLE.y < MOUSECOORDS.y)
+                ++it;
+            const auto DATA = m_gollumData.insert(it, makeShared<SGollumData>(target));
+            recalculate();
+            return;
+        }
+    }
     newTarget(target);
 }
 
