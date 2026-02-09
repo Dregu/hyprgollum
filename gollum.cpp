@@ -8,6 +8,7 @@
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprutils/string/String.hpp>
 
 #include <cstring>
 
@@ -50,14 +51,20 @@ void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
 
-    auto       GRID   = getVec2Opt("grid");
-    auto       GROW   = getIntOpt("grow");
-    auto       MANUAL = getStrOpt("manual");
-    int        W      = GRID.x;
-    int        H      = GRID.y;
-    const auto MLEN   = strlen(MANUAL);
-    const auto N      = m_gollumData.size();
-    const auto AREA   = m_parent->space()->workArea();
+    auto GRID    = getVec2Opt("grid");
+    auto GROW    = getIntOpt("grow");
+    auto MANUAL  = getStrOpt("manual");
+    auto MLEN    = strlen(MANUAL);
+    auto SMANUAL = std::string{MANUAL};
+    if (MLEN && !std::all_of(SMANUAL.begin(), SMANUAL.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
+        Log::logger->log(Log::ERR, "[hyprgollum] manual = {} is not a number", SMANUAL);
+        MANUAL = "";
+        MLEN   = 0;
+    }
+    int        W    = GRID.x;
+    int        H    = GRID.y;
+    const auto N    = m_gollumData.size();
+    const auto AREA = m_parent->space()->workArea();
 
     if ((W < 2 && H < 2 && !MLEN) || N == 1) {
         for (size_t i = 0; i < N; ++i) {
@@ -212,8 +219,9 @@ SP<SGollumData> CGollumAlgorithm::getClosestNode(const Vector2D& point) {
 Hyprlang::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
     if (WSRULE.layoutopts.contains(opt)) {
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, WSRULE.layoutopts.at(opt));
-        return WSRULE.layoutopts.at(opt).c_str();
+        auto VALUE = WSRULE.layoutopts.at(opt);
+        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
+        return VALUE.c_str();
     }
     return *CConfigValue<Hyprlang::STRING>("plugin:gollum:" + opt);
 }
@@ -221,12 +229,17 @@ Hyprlang::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
 Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
     if (WSRULE.layoutopts.contains(opt)) {
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, WSRULE.layoutopts.at(opt));
+        auto VALUE = WSRULE.layoutopts.at(opt);
+        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
+        if (VALUE.starts_with("true") || VALUE.starts_with("on") || VALUE.starts_with("yes"))
+            return 1;
+        else if (VALUE.starts_with("false") || VALUE.starts_with("off") || VALUE.starts_with("no"))
+            return 0;
         try {
-            x = std::stol(WSRULE.layoutopts.at(opt));
+            x = std::stol(std::string{VALUE});
             return x;
-        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, WSRULE.layoutopts.at(opt), e.what()); }
+        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, VALUE, e.what()); }
     }
     return *CConfigValue<Hyprlang::INT>("plugin:gollum:" + opt);
 }
@@ -234,15 +247,16 @@ Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
 Hyprlang::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
     if (WSRULE.layoutopts.contains(opt)) {
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, WSRULE.layoutopts.at(opt));
+        auto VALUE = WSRULE.layoutopts.at(opt);
+        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
         Hyprlang::INT y;
-        CVarList2     args(std::string{WSRULE.layoutopts.at(opt)}, 0, ' ', false);
+        CVarList2     args(std::string{VALUE}, 0, ' ', false);
         try {
             x = std::stol(std::string(args[0]));
             y = std::stol(std::string(args[1]));
             return Hyprlang::VEC2(x, y);
-        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, WSRULE.layoutopts.at(opt), e.what()); }
+        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, VALUE, e.what()); }
     }
     return *CConfigValue<Hyprlang::VEC2>("plugin:gollum:" + opt);
 }

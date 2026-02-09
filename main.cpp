@@ -30,7 +30,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hyprgollum] addTiledAlgo failed");
     }
 
-    return {"hyprgollum", "Autofit column layout for Hyprland", "Dregu", "0.0.0"};
+    return {"hyprgollum", "Autofit column layout for Hyprland", "Dregu", "0.1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {

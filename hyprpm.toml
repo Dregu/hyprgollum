@@ -1,0 +1,10 @@
+[repository]
+name = "hyprgollum"
+authors = ["Dregu"]
+#commit_pins = []
+
+[hyprgollum]
+description = "Automatic column / n-stack layout plugin."
+authors = ["Dregu"]
+output = "libhyprgollum.so"
+build = ["make"]
