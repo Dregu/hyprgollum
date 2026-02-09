@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <expected>
+#include <vector>
 
 #include <hyprland/src/layout/algorithm/TiledAlgorithm.hpp>
 #include <hyprland/src/helpers/memory/Memory.hpp>
@@ -12,7 +13,15 @@ namespace Layout {
 }
 
 namespace Layout::Tiled {
-    struct SGollumData;
+
+    struct SGollumData {
+        SGollumData(SP<ITarget> t) : target(t) {
+            ;
+        }
+
+        WP<ITarget> target;
+        CBox        box;
+    };
 
     class CGollumAlgorithm : public ITiledAlgorithm {
       public:
@@ -35,6 +44,9 @@ namespace Layout::Tiled {
         virtual SP<ITarget>                      getNextCandidate(SP<ITarget> old);
 
       private:
-        //std::vector<SP<SGollumData>> m_gollumData;
+        std::vector<SP<SGollumData>> m_gollumData;
+
+        SP<SGollumData>              dataFor(SP<ITarget> t);
+        SP<SGollumData>              getClosestNode(const Vector2D&);
     };
 }
