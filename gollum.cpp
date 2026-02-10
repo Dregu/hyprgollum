@@ -244,7 +244,10 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
     } else if (args[0].starts_with("move")) {
         if (m_gollumData.empty())
             return {};
-        auto target = Desktop::focusState()->window()->layoutTarget();
+        const auto WIN = Desktop::focusState()->window();
+        if (!WIN)
+            return {};
+        auto target = WIN->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
         if (it != m_gollumData.end()) {
             if (args[1].starts_with("t")) {
@@ -256,13 +259,16 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
     } else if (args[0].starts_with("swap")) {
         if (m_gollumData.empty())
             return {};
-        auto target = Desktop::focusState()->window()->layoutTarget();
+        const auto WIN = Desktop::focusState()->window();
+        if (!WIN)
+            return {};
+        auto target = WIN->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
         if (it != m_gollumData.end()) {
             if (args[1].starts_with("t")) {
-                swapTargets(Desktop::focusState()->window()->layoutTarget(), m_gollumData.front()->target.lock());
+                swapTargets(target, m_gollumData.front()->target.lock());
             } else if (args[1].starts_with("b")) {
-                swapTargets(Desktop::focusState()->window()->layoutTarget(), m_gollumData.back()->target.lock());
+                swapTargets(target, m_gollumData.back()->target.lock());
             }
         }
     } else if (args[0].starts_with("next")) {
