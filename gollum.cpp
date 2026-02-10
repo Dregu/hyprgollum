@@ -17,7 +17,11 @@ using namespace Layout;
 using namespace Layout::Tiled;
 
 void CGollumAlgorithm::newTarget(SP<ITarget> target) {
-    const auto DATA = m_gollumData.emplace_back(makeShared<SGollumData>(target));
+    if (!getStrOpt("new").starts_with("t") && !m_next.starts_with("t"))
+        m_gollumData.emplace_back(makeShared<SGollumData>(target));
+    else
+        m_gollumData.emplace_front(makeShared<SGollumData>(target));
+    m_next.clear();
     recalculate();
 }
 
@@ -30,7 +34,7 @@ void CGollumAlgorithm::movedTarget(SP<ITarget> target, std::optional<Vector2D> f
             const auto MIDDLE = t->position().middle();
             if (MIDDLE.y < MOUSECOORDS.y)
                 ++it;
-            const auto DATA = m_gollumData.insert(it, makeShared<SGollumData>(target));
+            m_gollumData.insert(it, makeShared<SGollumData>(target));
             recalculate();
             return;
         }
@@ -173,6 +177,7 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
     CVarList args(std::string{sv}, 3, ' ', false);
     if (args[0] == "reset") {
         m_gollumOpt.clear();
+        m_next.clear();
     } else if (args[0] == "toggle") {
         if (m_gollumOpt.contains(std::string{args[1]}))
             m_gollumOpt.erase(std::string{args[1]});
@@ -228,6 +233,8 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
                 swapTargets(Desktop::focusState()->window()->layoutTarget(), m_gollumData.back()->target.lock());
             }
         }
+    } else if (args[0].starts_with("next")) {
+        m_next = args[1];
     } else {
         Log::logger->log(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
         return std::unexpected("nope");

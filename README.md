@@ -11,10 +11,11 @@ general:layout = gollum
 
 plugin {
     gollum {
-        grid = 3 2       # set ideal grid size COLS ROWS (default 0 0, i.e. single column)
-        fit = 2          # 0=center when missing columns, 1=fill evenly, 2=grow left window (default 0)
-        order = 11223344 # repeating column numbers to follow instead of default pattern
-        dir = r          # horizontal orientation l/r (default l)
+        grid  = 3 2  # set ideal grid size COLS ROWS (default 0 0, i.e. single column)
+        fit   = 2    # 0=center when missing columns, 1=fill evenly, 2=grow left window (default 0)
+        dir   = r    # horizontal orientation l/r (default l)
+        new   = t    # new window position t/b (default b)
+        order = 1234 # repeating column numbers to follow instead of default pattern
     }
 }
 
@@ -32,10 +33,12 @@ bind = SUPER, v, layoutmsg, cycle grid 1 1,2 1,3 2,4 2
 bind = SUPER, b, layoutmsg, cycle fit 0,1,2
 
 # these dispatchers mimic (promoting to) master/slave on some grid setups
-bind = SUPER,       t, layoutmsg, focus, top
-bind = SUPER,       g, layoutmsg, focus, bottom
-bind = SUPER SHIFT, t, layoutmsg, move,  top
-bind = SUPER SHIFT, g, layoutmsg, move,  bottom
-bind = SUPER CTRL,  t, layoutmsg, swap,  top
-bind = SUPER CTRL,  g, layoutmsg, swap,  bottom
+bind = SUPER,            t, layoutmsg, focus, top
+bind = SUPER,            g, layoutmsg, focus, bottom
+bind = SUPER SHIFT,      t, layoutmsg, move,  top
+bind = SUPER SHIFT,      g, layoutmsg, move,  bottom
+bind = SUPER CTRL,       t, layoutmsg, swap,  top
+bind = SUPER CTRL,       g, layoutmsg, swap,  bottom
+bind = SUPER SHIFT CTRL, t, layoutmsg, next,  top     # oneshot new for next opened window
+bind = SUPER SHIFT CTRL, g, layoutmsg, next,  bottom
 ```

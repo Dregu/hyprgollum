@@ -2,7 +2,8 @@
 
 #include <string_view>
 #include <expected>
-#include <vector>
+#include <deque>
+#include <unordered_map>
 
 #include <hyprland/src/layout/algorithm/TiledAlgorithm.hpp>
 #include <hyprland/src/helpers/memory/Memory.hpp>
@@ -45,8 +46,9 @@ namespace Layout::Tiled {
         virtual SP<ITarget>                      getNextCandidate(SP<ITarget> old);
 
       private:
-        std::vector<SP<SGollumData>>                 m_gollumData;
+        std::deque<SP<SGollumData>>                  m_gollumData;
         std::unordered_map<std::string, std::string> m_gollumOpt;
+        std::string                                  m_next;
 
         SP<SGollumData>                              dataFor(SP<ITarget> t);
         SP<SGollumData>                              getClosestNode(const Vector2D&);
