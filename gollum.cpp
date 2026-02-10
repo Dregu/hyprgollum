@@ -8,6 +8,7 @@
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/Compositor.hpp>
 #include <hyprutils/string/String.hpp>
 
 #include <cstring>
@@ -214,18 +215,10 @@ void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir
     if (m_gollumData.size() < 2)
         return;
     const auto POS = t->position().middle();
-    auto       it  = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
-    if (dir == Math::DIRECTION_UP && it != m_gollumData.begin()) {
-        auto next = std::prev(it);
-        swapTargets(t, next->get()->target.lock());
-    } else if (dir == Math::DIRECTION_DOWN && it != --m_gollumData.end()) {
-        auto next = std::next(it);
-        swapTargets(t, next->get()->target.lock());
-    } else if (dir == Math::DIRECTION_LEFT) {
-        swapTargets(t, m_gollumData.front()->target.lock());
-    } else if (dir == Math::DIRECTION_RIGHT) {
-        swapTargets(t, m_gollumData.back()->target.lock());
-    }
+    auto       NEW = g_pCompositor->getWindowInDirection(t->window(), dir);
+    if (!NEW)
+        return;
+    swapTargets(t, NEW->layoutTarget());
     if (silent) {
         const auto OLD = getClosestNode(POS);
         if (OLD && OLD->target)
