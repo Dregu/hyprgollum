@@ -191,6 +191,29 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
         } else {
             m_gollumOpt[std::string{args[1]}] = list[0];
         }
+    } else if (args[0].starts_with("move")) {
+        auto target = Desktop::focusState()->window()->layoutTarget();
+        auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+        if (it != m_gollumData.end()) {
+            if (args[1].starts_with("t")) {
+                std::rotate(m_gollumData.begin(), it, it + 1);
+            } else if (args[1].starts_with("b")) {
+                std::rotate(it, it + 1, m_gollumData.end());
+            }
+        }
+    } else if (args[0].starts_with("swap")) {
+        auto target = Desktop::focusState()->window()->layoutTarget();
+        auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+        if (it != m_gollumData.end()) {
+            if (args[1].starts_with("t")) {
+                swapTargets(Desktop::focusState()->window()->layoutTarget(), m_gollumData.front()->target.lock());
+            } else if (args[1].starts_with("b")) {
+                swapTargets(Desktop::focusState()->window()->layoutTarget(), m_gollumData.back()->target.lock());
+            }
+        }
+    } else {
+        Log::logger->log(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
+        return std::unexpected("nope");
     }
     recalculate();
     return {};
