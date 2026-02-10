@@ -151,6 +151,34 @@ SP<ITarget> CGollumAlgorithm::getNextCandidate(SP<ITarget> old) {
 }
 
 std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
+    CVarList args(std::string{sv}, 3, ' ', false);
+    if (args[0] == "reset") {
+        m_gollumOpt.clear();
+    } else if (args[0] == "toggle") {
+        if (m_gollumOpt.contains(std::string{args[1]}))
+            m_gollumOpt.erase(std::string{args[1]});
+        else
+            m_gollumOpt[std::string{args[1]}] = args[2];
+    } else if (args[0] == "set") {
+        m_gollumOpt[std::string{args[1]}] = args[2];
+    } else if (args[0] == "unset") {
+        if (m_gollumOpt.contains(std::string{args[1]}))
+            m_gollumOpt.erase(std::string{args[1]});
+    } else if (args[0] == "cycle") {
+        CVarList list(std::string{args[2]}, 0, ',', false);
+        if (m_gollumOpt.contains(std::string{args[1]})) {
+            auto target = m_gollumOpt[std::string{args[1]}];
+            auto it     = std::ranges::find_if(list, [target](const auto& data) { return data == target; });
+            if (it != list.end())
+                ++it;
+            if (it == list.end())
+                it = list.begin();
+            m_gollumOpt[std::string{args[1]}] = *it;
+        } else {
+            m_gollumOpt[std::string{args[1]}] = list[0];
+        }
+    }
+    recalculate();
     return {};
 }
 
@@ -218,8 +246,8 @@ SP<SGollumData> CGollumAlgorithm::getClosestNode(const Vector2D& point) {
 
 Hyprlang::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt)) {
-        auto VALUE = WSRULE.layoutopts.at(opt);
+    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         return VALUE.c_str();
     }
@@ -228,8 +256,8 @@ Hyprlang::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
 
 Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt)) {
-        auto VALUE = WSRULE.layoutopts.at(opt);
+    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
         if (VALUE.starts_with("true") || VALUE.starts_with("on") || VALUE.starts_with("yes"))
@@ -246,8 +274,8 @@ Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
 
 Hyprlang::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt)) {
-        auto VALUE = WSRULE.layoutopts.at(opt);
+    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
         Hyprlang::INT y;

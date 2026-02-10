@@ -45,13 +45,14 @@ namespace Layout::Tiled {
         virtual SP<ITarget>                      getNextCandidate(SP<ITarget> old);
 
       private:
-        std::vector<SP<SGollumData>> m_gollumData;
+        std::vector<SP<SGollumData>>                 m_gollumData;
+        std::unordered_map<std::string, std::string> m_gollumOpt;
 
-        SP<SGollumData>              dataFor(SP<ITarget> t);
-        SP<SGollumData>              getClosestNode(const Vector2D&);
+        SP<SGollumData>                              dataFor(SP<ITarget> t);
+        SP<SGollumData>                              getClosestNode(const Vector2D&);
 
-        Hyprlang::STRING             getStrOpt(const std::string& opt);
-        Hyprlang::INT                getIntOpt(const std::string& opt);
-        Hyprlang::VEC2               getVec2Opt(const std::string& opt);
+        Hyprlang::STRING                             getStrOpt(const std::string& opt);
+        Hyprlang::INT                                getIntOpt(const std::string& opt);
+        Hyprlang::VEC2                               getVec2Opt(const std::string& opt);
     };
 }
