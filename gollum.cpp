@@ -51,20 +51,25 @@ void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
 
-    auto GRID    = getVec2Opt("grid");
-    auto GROW    = getIntOpt("grow");
-    auto MANUAL  = getStrOpt("manual");
-    auto MLEN    = strlen(MANUAL);
-    auto SMANUAL = std::string{MANUAL};
-    if (MLEN && !std::all_of(SMANUAL.begin(), SMANUAL.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
-        Log::logger->log(Log::ERR, "[hyprgollum] manual = {} is not a number", SMANUAL);
-        MANUAL = "";
-        MLEN   = 0;
+    auto GRID   = getVec2Opt("grid");
+    auto FIT    = getIntOpt("fit");
+    auto ORDER  = getStrOpt("order");
+    auto MLEN   = strlen(ORDER);
+    auto SORDER = std::string{ORDER};
+    if (MLEN && !std::all_of(SORDER.begin(), SORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
+        Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", SORDER);
+        ORDER = "";
+        MLEN  = 0;
     }
     int        W    = GRID.x;
     int        H    = GRID.y;
     const auto N    = m_gollumData.size();
     const auto AREA = m_parent->space()->workArea();
+
+    if (MLEN) {
+        for (size_t i = 0; i < MLEN; ++i)
+            W = std::max((ORDER)[i] - '0', W);
+    }
 
     if ((W < 2 && H < 2 && !MLEN) || N == 1) {
         for (size_t i = 0; i < N; ++i) {
@@ -75,7 +80,13 @@ void CGollumAlgorithm::recalculate() {
             const auto WINDOW = TARGET->window();
             if (!WINDOW)
                 continue;
-            const auto BOX = CBox{AREA.x, AREA.y + i * AREA.h / N, AREA.w, AREA.h / N};
+            double w = AREA.w;
+            double m = 0;
+            if (FIT == 0) {
+                w = AREA.w / W;
+                m = (W - 1) * w / 2;
+            }
+            const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N, w, AREA.h / N};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
         }
@@ -83,15 +94,12 @@ void CGollumAlgorithm::recalculate() {
     }
 
     std::map<size_t, std::vector<SP<SGollumData>>> cols;
-    if (MLEN) {
-        for (size_t i = 0; i < MLEN; ++i)
-            W = std::max((MANUAL)[i] - '0', W);
-    }
-    int x = 0;
+    int                                            FW = W;
+    int                                            x  = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
         if (MLEN)
-            x = (MANUAL)[i % MLEN] - '0' - 1;
+            x = (ORDER)[i % MLEN] - '0' - 1;
         else {
             if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
                 --x;
@@ -103,7 +111,7 @@ void CGollumAlgorithm::recalculate() {
         cols[x].emplace_back(DATA);
     }
 
-    if (GROW <= 0 && cols.size() < W) {
+    if (FIT < 2 && cols.size() < W) {
         size_t empty = W - cols.size();
         for (size_t i = 0; i < W; ++i) {
             if (cols[i + 1].empty()) {
@@ -123,18 +131,23 @@ void CGollumAlgorithm::recalculate() {
             const auto WINDOW = TARGET->window();
             if (!WINDOW)
                 continue;
-            double w  = AREA.w / W;
+            double w = AREA.w / W;
+            double m = 0;
+            if (FIT == 0) {
+                w = AREA.w / FW;
+                m = (FW - W) * w / 2;
+            }
             auto   rw = w;
             double h  = AREA.h / col.size();
-            if (GROW > 0) {
-                for (size_t i = x + 1; i < W; ++i) {
+            if (FIT == 2) {
+                for (int i = x + 1; i < W; ++i) {
                     if (cols[i].empty())
                         rw += w;
                     else
                         break;
                 }
             }
-            const auto BOX = CBox{AREA.x + x * w, AREA.y + y * h, rw, h};
+            const auto BOX = CBox{AREA.x + x * w + m, AREA.y + y * h, rw, h};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
         }
@@ -145,7 +158,7 @@ SP<ITarget> CGollumAlgorithm::getNextCandidate(SP<ITarget> old) {
     if (m_gollumData.empty())
         return nullptr;
     const auto MIDDLE = old->position().middle();
-    if (const auto NODE = getClosestNode(MIDDLE); NODE)
+    if (const auto NODE = getClosestNode(MIDDLE - Vector2D{1, 1}); NODE)
         return NODE->target.lock();
     return nullptr;
 }
