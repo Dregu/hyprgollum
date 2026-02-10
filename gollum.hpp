@@ -51,7 +51,7 @@ namespace Layout::Tiled {
         SP<SGollumData>                              dataFor(SP<ITarget> t);
         SP<SGollumData>                              getClosestNode(const Vector2D&);
 
-        Hyprlang::STRING                             getStrOpt(const std::string& opt);
+        std::string                                  getStrOpt(const std::string& opt);
         Hyprlang::INT                                getIntOpt(const std::string& opt);
         Hyprlang::VEC2                               getVec2Opt(const std::string& opt);
     };

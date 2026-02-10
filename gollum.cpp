@@ -52,27 +52,25 @@ void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
 
-    auto GRID   = getVec2Opt("grid");
-    auto FIT    = getIntOpt("fit");
-    auto ORDER  = getStrOpt("order");
-    auto MLEN   = strlen(ORDER);
-    auto SORDER = std::string{ORDER};
-    if (MLEN && !std::all_of(SORDER.begin(), SORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
-        Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", SORDER);
+    auto GRID  = getVec2Opt("grid");
+    auto FIT   = getIntOpt("fit");
+    auto ORDER = getStrOpt("order");
+    auto DIR   = getStrOpt("dir");
+    if (!ORDER.empty() && !std::all_of(ORDER.begin(), ORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
+        Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
         ORDER = "";
-        MLEN  = 0;
     }
     int        W    = GRID.x;
     int        H    = GRID.y;
     const auto N    = m_gollumData.size();
     const auto AREA = m_parent->space()->workArea();
 
-    if (MLEN) {
-        for (size_t i = 0; i < MLEN; ++i)
+    if (!ORDER.empty()) {
+        for (size_t i = 0; i < ORDER.size(); ++i)
             W = std::max((ORDER)[i] - '0', W);
     }
 
-    if ((W < 2 && H < 2 && !MLEN) || N == 1) {
+    if ((W < 2 && H < 2 && ORDER.empty()) || N == 1) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
@@ -99,8 +97,8 @@ void CGollumAlgorithm::recalculate() {
     int                                            x  = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
-        if (MLEN)
-            x = (ORDER)[i % MLEN] - '0' - 1;
+        if (!ORDER.empty())
+            x = (ORDER)[i % ORDER.size()] - '0' - 1;
         else {
             if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
                 --x;
@@ -137,19 +135,26 @@ void CGollumAlgorithm::recalculate() {
             if (FIT == 0) {
                 w = AREA.w / FW;
                 m = (FW - W) * w / 2;
+                if (DIR.starts_with("r"))
+                    m = -m;
             }
             auto   rw = w;
+            int    o  = 0;
             double h  = AREA.h / col.size();
             if (FIT == 2) {
                 for (int i = x + 1; i < W; ++i) {
-                    if (cols[i].empty())
+                    if (cols[i].empty()) {
                         rw += w;
-                    else
+                        if (DIR.starts_with("r"))
+                            --o;
+                    } else
                         break;
                 }
             }
-            const auto BOX = CBox{AREA.x + x * w + m, AREA.y + y * h, rw, h};
-            DATA->box      = BOX;
+            auto BOX = CBox{AREA.x + x * w + m, AREA.y + y * h, rw, h};
+            if (DIR.starts_with("r"))
+                BOX = CBox{AREA.x + AREA.w - w - x * w + m + o * w, AREA.y + y * h, rw, h};
+            DATA->box = BOX;
             TARGET->setPositionGlobal(BOX);
         }
     }
@@ -191,7 +196,17 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
         } else {
             m_gollumOpt[std::string{args[1]}] = list[0];
         }
+    } else if (args[0].starts_with("focus")) {
+        if (m_gollumData.empty())
+            return {};
+        if (args[1].starts_with("t")) {
+            Desktop::focusState()->fullWindowFocus(m_gollumData.front()->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
+        } else if (args[1].starts_with("b")) {
+            Desktop::focusState()->fullWindowFocus(m_gollumData.back()->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
+        }
     } else if (args[0].starts_with("move")) {
+        if (m_gollumData.empty())
+            return {};
         auto target = Desktop::focusState()->window()->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
         if (it != m_gollumData.end()) {
@@ -202,6 +217,8 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
             }
         }
     } else if (args[0].starts_with("swap")) {
+        if (m_gollumData.empty())
+            return {};
         auto target = Desktop::focusState()->window()->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
         if (it != m_gollumData.end()) {
@@ -273,7 +290,7 @@ SP<SGollumData> CGollumAlgorithm::getClosestNode(const Vector2D& point) {
     return res;
 }
 
-Hyprlang::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
+std::string CGollumAlgorithm::getStrOpt(const std::string& opt) {
     const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
     if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
