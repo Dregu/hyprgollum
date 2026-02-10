@@ -17,10 +17,42 @@ using namespace Layout;
 using namespace Layout::Tiled;
 
 void CGollumAlgorithm::newTarget(SP<ITarget> target) {
-    if (!getStrOpt("new").starts_with("t") && !m_next.starts_with("t"))
-        m_gollumData.emplace_back(makeShared<SGollumData>(target));
-    else
-        m_gollumData.emplace_front(makeShared<SGollumData>(target));
+    auto NEW = getStrOpt("new");
+    if (!m_next.empty())
+        NEW = m_next;
+    auto WIN = Desktop::focusState()->window();
+    if (!WIN) {
+        const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
+        if (const auto DATA = getClosestNode(MOUSECOORDS); DATA) {
+            if (const auto TARGET = DATA->target.lock(); TARGET) {
+                WIN = TARGET->window();
+            }
+        }
+    }
+    bool found = false;
+    if (NEW.starts_with("n") && WIN) {
+        auto t  = WIN->layoutTarget();
+        auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
+        if (++it != m_gollumData.end()) {
+            m_gollumData.insert(it, makeShared<SGollumData>(target));
+            found = true;
+        }
+    } else if (NEW.starts_with("p") && WIN) {
+        auto t  = WIN->layoutTarget();
+        auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
+        if (it != m_gollumData.end()) {
+            m_gollumData.insert(it, makeShared<SGollumData>(target));
+            found = true;
+        }
+    }
+
+    if (!found) {
+        if (NEW.starts_with("t"))
+            m_gollumData.emplace_front(makeShared<SGollumData>(target));
+        else
+            m_gollumData.emplace_back(makeShared<SGollumData>(target));
+    }
+
     m_next.clear();
     recalculate();
 }
