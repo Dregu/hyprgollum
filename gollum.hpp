@@ -4,6 +4,7 @@
 #include <expected>
 #include <deque>
 #include <unordered_map>
+#include <map>
 
 #include <hyprland/src/layout/algorithm/TiledAlgorithm.hpp>
 #include <hyprland/src/helpers/memory/Memory.hpp>
@@ -24,6 +25,12 @@ namespace Layout::Tiled {
         WP<ITarget> target;
         CBox        box;
         Vector2D    resize;
+        Vector2D    pos;
+    };
+
+    struct SGollumSize {
+        double                             w;
+        std::unordered_map<size_t, double> h;
     };
 
     class CGollumAlgorithm : public ITiledAlgorithm {
@@ -47,15 +54,17 @@ namespace Layout::Tiled {
         virtual SP<ITarget>                      getNextCandidate(SP<ITarget> old);
 
       private:
-        std::deque<SP<SGollumData>>                  m_gollumData;
-        std::unordered_map<std::string, std::string> m_gollumOpt;
-        std::string                                  m_next;
+        std::deque<SP<SGollumData>>                    m_gollumData;
+        std::unordered_map<std::string, std::string>   m_gollumOpt;
+        std::map<size_t, std::vector<SP<SGollumData>>> m_gollumCol;
+        std::string                                    m_gollumNext;
+        std::unordered_map<size_t, SGollumSize>        m_gollumSize;
 
-        SP<SGollumData>                              dataFor(SP<ITarget> t);
-        SP<SGollumData>                              getClosestNode(const Vector2D&);
+        SP<SGollumData>                                dataFor(SP<ITarget> t);
+        SP<SGollumData>                                getClosestNode(const Vector2D&);
 
-        std::string                                  getStrOpt(const std::string& opt);
-        Hyprlang::INT                                getIntOpt(const std::string& opt);
-        Hyprlang::VEC2                               getVec2Opt(const std::string& opt);
+        std::string                                    getStrOpt(const std::string& opt);
+        Hyprlang::INT                                  getIntOpt(const std::string& opt);
+        Hyprlang::VEC2                                 getVec2Opt(const std::string& opt);
     };
 }

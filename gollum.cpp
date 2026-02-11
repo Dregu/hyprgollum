@@ -18,8 +18,8 @@ using namespace Layout::Tiled;
 
 void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     auto NEW = getStrOpt("new");
-    if (!m_next.empty())
-        NEW = m_next;
+    if (!m_gollumNext.empty())
+        NEW = m_gollumNext;
     auto WIN = Desktop::focusState()->window();
     if (!WIN) {
         const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
@@ -53,7 +53,7 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
             m_gollumData.emplace_back(makeShared<SGollumData>(target));
     }
 
-    m_next.clear();
+    m_gollumNext.clear();
     recalculate();
 }
 
@@ -86,16 +86,27 @@ void CGollumAlgorithm::resizeTarget(const Vector2D& delta, SP<ITarget> target, e
     auto it = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
     if (m_gollumData.size() < 2 || it == m_gollumData.end())
         return;
-    if (it + 1 == m_gollumData.end() || (it != m_gollumData.begin() && corner < CORNER_BOTTOMRIGHT))
-        --it;
-    (*it)->resize += delta;
+    auto pos = (*it)->pos;
+    if (pos.x < 0)
+        return;
+    //if (it + 1 == m_gollumData.end() || (it != m_gollumData.begin() && corner < CORNER_BOTTOMRIGHT))
+    if (pos.y == m_gollumCol[pos.x].size() - 1 || (pos.y > 0 && corner < CORNER_BOTTOMRIGHT))
+        --pos.y;
+    m_gollumSize[pos.x].h[pos.y] += delta.y;
+    if (pos.x > 0 && (pos.x == m_gollumCol.size() - 1 || (corner & (CORNER_TOPLEFT | CORNER_BOTTOMLEFT)) > 0))
+        --pos.x;
+    while (pos.x > 0 && m_gollumCol[pos.x].empty())
+        --pos.x;
+    m_gollumSize[pos.x].w += delta.x;
+    //(*it)->resize += delta;
     recalculate();
 }
 
 void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
-    m_gollumData.back()->resize.y = 0;
+    m_gollumSize[m_gollumCol.size() - 1].w                                                 = 0;
+    m_gollumSize[m_gollumCol.size() - 1].h[m_gollumCol[m_gollumCol.size() - 1].size() - 1] = 0;
 
     auto GRID  = getVec2Opt("grid");
     auto FIT   = getIntOpt("fit");
@@ -115,7 +126,7 @@ void CGollumAlgorithm::recalculate() {
             W = std::max((ORDER)[i] - '0', W);
     }
 
-    if ((W < 2 && H < 2 && ORDER.empty()) || N == 1) {
+    /*if ((W < 2 && H < 2 && ORDER.empty()) || N == 1) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
@@ -133,45 +144,47 @@ void CGollumAlgorithm::recalculate() {
             }
             h += DATA->resize.y;
             int ry = 0;
-            if (i > 0)
-                ry = m_gollumData[i - 1]->resize.y;
+            if (DATA->pos.y > 0)
+                ry = m_gollumSize[DATA->pos.x].h[DATA->pos.y - 1];
+            //ry = m_gollumData[i - 1]->resize.y;
             const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N + ry, w, h - ry};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
         }
         return;
-    }
+    }*/
 
-    std::map<size_t, std::vector<SP<SGollumData>>> cols;
-    int                                            FW = W;
-    int                                            x  = 0;
+    m_gollumCol.clear();
+    int FW = W;
+    int x  = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
         if (!ORDER.empty())
             x = (ORDER)[i % ORDER.size()] - '0' - 1;
         else {
-            if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
+            if ((i < W * H - 1 && m_gollumCol[x].size() >= H) || (i >= W * H - 1))
                 --x;
-            if ((i == 0 || i == W * H - (H - 1)) && cols[0].size() < H)
+            if ((i == 0 || i == W * H - (H - 1)) && m_gollumCol[0].size() < H)
                 x = 0;
             else if (x <= 0)
                 x = W - 1;
         }
-        cols[x].emplace_back(DATA);
+        DATA->pos = Vector2D{x, (int)m_gollumCol[x].size()};
+        m_gollumCol[x].emplace_back(DATA);
     }
 
-    if (FIT < 2 && cols.size() < W) {
-        size_t empty = W - cols.size();
+    if (FIT < 2 && m_gollumCol.size() < W) {
+        size_t empty = W - m_gollumCol.size();
         for (size_t i = 0; i < W; ++i) {
-            if (cols[i + 1].empty()) {
-                cols[i + 1] = cols[i + 1 + empty];
-                cols[i + 1 + empty].clear();
+            if (m_gollumCol[i + 1].empty()) {
+                m_gollumCol[i + 1] = m_gollumCol[i + 1 + empty];
+                m_gollumCol[i + 1 + empty].clear();
             }
         }
         W = W - empty;
     }
 
-    for (auto& [x, col] : cols) {
+    for (auto& [x, col] : m_gollumCol) {
         for (size_t y = 0; y < col.size(); ++y) {
             const auto& DATA   = col[y];
             const auto  TARGET = DATA->target.lock();
@@ -193,15 +206,26 @@ void CGollumAlgorithm::recalculate() {
             double h  = AREA.h / col.size();
             if (FIT == 2) {
                 for (int i = x + 1; i < W; ++i) {
-                    if (cols[i].empty()) {
+                    if (m_gollumCol[i].empty()) {
                         rw += w;
                         if (DIR.starts_with("r"))
                             --o;
+                        else
+                            ++o;
                     } else
                         break;
                 }
             }
-            auto BOX = CBox{AREA.x + x * w + m, AREA.y + y * h, rw, h};
+            double sx = 0;
+            double sy = 0;
+            double sw = m_gollumCol.size() > 1 ? m_gollumSize[DATA->pos.x].w : 0;
+            double sh = m_gollumCol[x].size() > 1 ? m_gollumSize[DATA->pos.x].h[DATA->pos.y] : 0;
+            if (DATA->pos.x > 0) {
+                sx = m_gollumSize[DATA->pos.x - 1 - o].w;
+            }
+            if (DATA->pos.y > 0)
+                sy = m_gollumSize[DATA->pos.x].h[DATA->pos.y - 1];
+            auto BOX = CBox{AREA.x + x * w + m + sx, AREA.y + y * h + sy, rw + sw - sx, h + sh - sy};
             if (DIR.starts_with("r"))
                 BOX = CBox{AREA.x + AREA.w - w - x * w + m + o * w, AREA.y + y * h, rw, h};
             DATA->box = BOX;
@@ -223,9 +247,8 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
     CVarList args(std::string{sv}, 3, ' ', false);
     if (args[0] == "reset") {
         m_gollumOpt.clear();
-        m_next.clear();
-        for (auto& data : m_gollumData)
-            data->resize.y = 0;
+        m_gollumNext.clear();
+        m_gollumSize.clear();
     } else if (args[0] == "toggle") {
         if (m_gollumOpt.contains(std::string{args[1]}))
             m_gollumOpt.erase(std::string{args[1]});
@@ -288,7 +311,7 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
             }
         }
     } else if (args[0].starts_with("next")) {
-        m_next = args[1];
+        m_gollumNext = args[1];
     } else {
         Log::logger->log(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
         return std::unexpected("nope");
