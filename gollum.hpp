@@ -23,6 +23,7 @@ namespace Layout::Tiled {
 
         WP<ITarget> target;
         CBox        box;
+        Vector2D    resize;
     };
 
     class CGollumAlgorithm : public ITiledAlgorithm {
@@ -34,7 +35,7 @@ namespace Layout::Tiled {
         virtual void                             movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint = std::nullopt);
         virtual void                             removeTarget(SP<ITarget> target);
 
-        virtual void                             resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
+        virtual void                             resizeTarget(const Vector2D& delta, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
         virtual void                             recalculate();
 
         virtual void                             swapTargets(SP<ITarget> a, SP<ITarget> b);

@@ -82,11 +82,20 @@ void CGollumAlgorithm::removeTarget(SP<ITarget> target) {
     recalculate();
 }
 
-void CGollumAlgorithm::resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner) {}
+void CGollumAlgorithm::resizeTarget(const Vector2D& delta, SP<ITarget> target, eRectCorner corner) {
+    auto it = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+    if (m_gollumData.size() < 2 || it == m_gollumData.end())
+        return;
+    if (it + 1 == m_gollumData.end() || (it != m_gollumData.begin() && corner < CORNER_BOTTOMRIGHT))
+        --it;
+    (*it)->resize += delta;
+    recalculate();
+}
 
 void CGollumAlgorithm::recalculate() {
     if (m_gollumData.empty())
         return;
+    m_gollumData.back()->resize.y = 0;
 
     auto GRID  = getVec2Opt("grid");
     auto FIT   = getIntOpt("fit");
@@ -116,12 +125,17 @@ void CGollumAlgorithm::recalculate() {
             if (!WINDOW)
                 continue;
             double w = AREA.w;
+            double h = AREA.h / N;
             double m = 0;
             if (FIT == 0) {
                 w = AREA.w / W;
                 m = (W - 1) * w / 2;
             }
-            const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N, w, AREA.h / N};
+            h += DATA->resize.y;
+            int ry = 0;
+            if (i > 0)
+                ry = m_gollumData[i - 1]->resize.y;
+            const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N + ry, w, h - ry};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
         }
@@ -210,6 +224,8 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
     if (args[0] == "reset") {
         m_gollumOpt.clear();
         m_next.clear();
+        for (auto& data : m_gollumData)
+            data->resize.y = 0;
     } else if (args[0] == "toggle") {
         if (m_gollumOpt.contains(std::string{args[1]}))
             m_gollumOpt.erase(std::string{args[1]});
