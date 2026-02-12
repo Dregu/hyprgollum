@@ -316,13 +316,20 @@ void CGollumAlgorithm::swapTargets(SP<ITarget> a, SP<ITarget> b) {
 }
 
 void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent) {
-    if (m_gollumData.size() < 2)
+    if (!t || !t->space() || !t->space()->workspace())
         return;
+    if (t->window())
+        t->window()->setAnimationsToMove();
     const auto POS = t->position().middle();
     auto       NEW = g_pCompositor->getWindowInDirection(t->window(), dir);
-    if (!NEW)
-        return;
-    swapTargets(t, NEW->layoutTarget());
+    if (!NEW || !dataFor(NEW->layoutTarget())) {
+        const auto PMONINDIR = g_pCompositor->getMonitorInDirection(t->space()->workspace()->m_monitor.lock(), dir);
+        if (PMONINDIR && PMONINDIR != t->space()->workspace()->m_monitor.lock()) {
+            const auto TARGETWS = PMONINDIR->m_activeWorkspace;
+            t->assignToSpace(TARGETWS->m_space);
+        }
+    } else
+        swapTargets(t, NEW->layoutTarget());
     if (silent) {
         const auto OLD = getClosestNode(POS);
         if (OLD && OLD->target)
