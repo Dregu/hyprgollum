@@ -41,4 +41,10 @@ bind = SUPER CTRL,       t, layoutmsg, swapwindow,  t
 bind = SUPER CTRL,       g, layoutmsg, swap,        b
 bind = SUPER SHIFT CTRL, t, layoutmsg, nextwindow,  t      # oneshot new for next opened window
 bind = SUPER SHIFT CTRL, g, layoutmsg, next,        b
+
+# you can also use top/bottom tags to preset placement for specific apps
+# if there are already any tagged windows on top, opens after those
+# tag overrides new, but nextwindow overrides tag
+windowrule = match:class firefox|codium, tag +top
+bind = SUPER, Return, exec, [tag +bottom]foot
 ```

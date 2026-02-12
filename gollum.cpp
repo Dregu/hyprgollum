@@ -29,20 +29,39 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
             }
         }
     }
+
     bool found = false;
-    if (NEW.starts_with("n") && WIN) {
-        auto t  = WIN->layoutTarget();
-        auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
-        if (++it != m_gollumData.end()) {
+    if (target->window() && m_next.empty()) {
+        if (m_gollumData.empty()) {
+            m_gollumData.emplace_back(makeShared<SGollumData>(target));
+            found = true;
+        } else if (target->window()->m_ruleApplicator->m_tagKeeper.isTagged("top")) {
+            auto it = std::ranges::find_if(m_gollumData, [](const auto& data) { return !data->target.lock()->window()->m_ruleApplicator->m_tagKeeper.isTagged("top"); });
             m_gollumData.insert(it, makeShared<SGollumData>(target));
+            found = true;
+        } else if (target->window()->m_ruleApplicator->m_tagKeeper.isTagged("bottom")) {
+            auto it = std::ranges::find_if(m_gollumData.rbegin(), m_gollumData.rend(),
+                                           [](const auto& data) { return !data->target.lock()->window()->m_ruleApplicator->m_tagKeeper.isTagged("bottom"); });
+            m_gollumData.insert(it.base(), makeShared<SGollumData>(target));
             found = true;
         }
-    } else if (NEW.starts_with("p") && WIN) {
-        auto t  = WIN->layoutTarget();
-        auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
-        if (it != m_gollumData.end()) {
-            m_gollumData.insert(it, makeShared<SGollumData>(target));
-            found = true;
+    }
+
+    if (!found) {
+        if (NEW.starts_with("n") && WIN) {
+            auto t  = WIN->layoutTarget();
+            auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
+            if (++it != m_gollumData.end()) {
+                m_gollumData.insert(it, makeShared<SGollumData>(target));
+                found = true;
+            }
+        } else if (NEW.starts_with("p") && WIN) {
+            auto t  = WIN->layoutTarget();
+            auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
+            if (it != m_gollumData.end()) {
+                m_gollumData.insert(it, makeShared<SGollumData>(target));
+                found = true;
+            }
         }
     }
 
