@@ -7,7 +7,6 @@
 
 #include <hyprland/src/layout/algorithm/TiledAlgorithm.hpp>
 #include <hyprland/src/helpers/memory/Memory.hpp>
-#include <hyprland/src/managers/HookSystemManager.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 
 namespace Layout {
