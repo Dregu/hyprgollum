@@ -14,7 +14,7 @@ plugin {
         grid  = 3 2  # set ideal grid size, COLS ROWS (default 0 0, i.e. single column)
         fit   = 2    # 0=center when missing columns, 1=fill evenly, 2=grow first window (default 0)
         dir   = r    # horizontal orientation, left/right (default l)
-        new   = top  # new window position, top/bottom/next/prev (default b)
+        new   = top  # new window position, top/bottom/next/prev/smart (default b)
         order = 1234 # repeating column numbers to follow instead of default master-ish logic
     }
 }

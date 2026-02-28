@@ -20,12 +20,18 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     auto NEW = getStrOpt("new");
     if (!m_next.empty())
         NEW = m_next;
-    auto WIN = Desktop::focusState()->window();
-    if (!WIN) {
-        const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
-        if (const auto DATA = getClosestNode(MOUSECOORDS); DATA) {
-            if (const auto TARGET = DATA->target.lock(); TARGET) {
+    auto       WIN         = Desktop::focusState()->window();
+    const auto MOUSECOORDS = g_pInputManager->getMouseCoordsInternal();
+    if (const auto DATA = getClosestNode(MOUSECOORDS); DATA) {
+        if (const auto TARGET = DATA->target.lock(); TARGET) {
+            if (!WIN || NEW.starts_with("s"))
                 WIN = TARGET->window();
+            if (NEW.starts_with("s")) {
+                const auto MID = TARGET->position().middle();
+                if (MOUSECOORDS.y < MID.y)
+                    NEW = "prev";
+                else
+                    NEW = "next";
             }
         }
     }
