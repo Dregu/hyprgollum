@@ -128,7 +128,7 @@ void CGollumAlgorithm::recalculate() {
 
     if (!ORDER.empty()) {
         for (size_t i = 0; i < ORDER.size(); ++i)
-            W = std::max((ORDER)[i] - '0', W);
+            W = std::max((ORDER)[i] - '0' + 1, W);
     }
 
     if ((W < 2 && H < 2 && ORDER.empty()) || N == 1) {
@@ -159,7 +159,7 @@ void CGollumAlgorithm::recalculate() {
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
         if (!ORDER.empty())
-            x = (ORDER)[i % ORDER.size()] - '0' - 1;
+            x = (ORDER)[i % ORDER.size()] - '0';
         else {
             if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
                 --x;

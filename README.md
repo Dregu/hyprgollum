@@ -20,7 +20,7 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | fit | How to fit columns in the workarea if `#columns < grid.x`. `center` to center small columns, `fill` to fit columns evenly, `top` to grow more important windows to fill gaps. Anything else is undefined behavior. | str | top |
 | dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | left |
 | new | Position in the stack for new windows. One of: `top` of the stack, `bottom` of the stack, `next` after focused, `prev` before focused, `smart` at cursor. | str | bottom |
-| order | Repeating pattern of column numbers `1..9` to place new windows in the order of instead of the default grid logic. Overrides `grid`. | str |  |
+| order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of instead of the default grid logic. Overrides `grid`. | str |  |
 
 ### Dispatchers
 
@@ -59,13 +59,13 @@ plugin {
         fit   = c
         dir   = r
         new   = top
-        order = 1234
+        order = 0123
     }
 }
 
 # all options can also be used with layoutopt workspace rules
 workspace = m[HDMI-A-2], layout:gollum, layoutopt:grid:1 1
-workspace = 3, layout:gollum, layoutopt:order:1234, layoutopt:fit:center
+workspace = 3, layout:gollum, layoutopt:order:0123, layoutopt:fit:center
 
 # all options can also be used with layoutmsg binds: set, unset, toggle, cycle, reset
 bind = SUPER, Z, layoutmsg, reset
@@ -99,5 +99,5 @@ bind = SUPER, C, layoutmsg, cycle fit f,t   # switch between 2 equal columns and
 bind = SUPER, V, layoutmsg, toggle dir r    # swap top to right
 
 # silly stuff that nobody should probably use
-workspace = 8, layout:gollum, layoutopt:fit:f, layoutopt:order:1234567887654321 # just keep making columns until there are way too many, then do a U-turn
+workspace = 10, layout:gollum, layoutopt:fit:f, layoutopt:order:01234567899876543210 # just keep making columns until there are way too many, then do a U-turn
 ```
