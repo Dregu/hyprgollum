@@ -22,7 +22,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     }
 
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:grid", Hyprlang::VEC2{0, 0});
-    HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:fit", Hyprlang::INT{0});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:fit", Hyprlang::STRING{"c"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:order", Hyprlang::STRING{""});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:dir", Hyprlang::STRING{"l"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:new", Hyprlang::STRING{"b"});

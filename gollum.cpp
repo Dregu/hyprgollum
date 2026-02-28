@@ -114,7 +114,7 @@ void CGollumAlgorithm::recalculate() {
         return;
 
     auto GRID  = getVec2Opt("grid");
-    auto FIT   = getIntOpt("fit");
+    auto FIT   = getStrOpt("fit");
     auto ORDER = getStrOpt("order");
     auto DIR   = getStrOpt("dir");
     if (!ORDER.empty() && !std::all_of(ORDER.begin(), ORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
@@ -142,7 +142,7 @@ void CGollumAlgorithm::recalculate() {
                 continue;
             double w = AREA.w;
             double m = 0;
-            if (FIT == 0) {
+            if (FIT.starts_with("c")) {
                 w = AREA.w / W;
                 m = (W - 1) * w / 2;
             }
@@ -171,7 +171,7 @@ void CGollumAlgorithm::recalculate() {
         cols[x].emplace_back(DATA);
     }
 
-    if (FIT < 2 && cols.size() < W) {
+    if ((FIT.starts_with("c") || FIT.starts_with("f")) && cols.size() < W) {
         size_t empty = W - cols.size();
         for (size_t i = 0; i < W; ++i) {
             if (cols[i + 1].empty()) {
@@ -193,7 +193,7 @@ void CGollumAlgorithm::recalculate() {
                 continue;
             double w = AREA.w / W;
             double m = 0;
-            if (FIT == 0) {
+            if (FIT.starts_with("c")) {
                 w = AREA.w / FW;
                 m = (FW - W) * w / 2;
                 if (DIR.starts_with("r"))
@@ -202,7 +202,7 @@ void CGollumAlgorithm::recalculate() {
             auto   rw = w;
             int    o  = 0;
             double h  = AREA.h / col.size();
-            if (FIT == 2) {
+            if (FIT.starts_with("t")) {
                 for (int i = x + 1; i < W; ++i) {
                     if (cols[i].empty()) {
                         rw += w;
