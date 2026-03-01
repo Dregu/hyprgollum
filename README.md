@@ -18,12 +18,12 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 
 | name | description | type | default
 | --- | --- | --- | --- |
-| grid | Ideal grid size, defines the max number of columns, the max number of rows in the **top** column, and the ideal number of rows in a **bottom** column before a new column is created. If `#windows > x * y`, extra windows are arranged evenly across **bottom** columns. | vec2 | 1 1 |
-| fit | How to fit columns in the workarea if `#columns < grid.x`. `center` to center small columns, `fill` to fit columns evenly, `top` to grow more important windows to fill gaps, `no` to just leave gaps. | str | top |
-| dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | left |
-| new | Position in the stack for new windows. One of: `top` of the stack, `bottom` of the stack, `next` after focused, `prev` before focused, `smart` at cursor. | str | bottom |
+| grid | Ideal grid size, defines the max number of columns, the max number of rows in the **top** column, and the ideal number of rows in a **bottom** column before a new column is created. If `#windows > x * y`, extra windows are arranged evenly across **bottom** columns. | vec2 | `1 1` |
+| fit | How to fit columns in the workarea if `#columns < grid.x`. One of: <ul><li>`center` to center small columns</li><li>`fill` to fit columns evenly</li><li>`top` to grow more important windows to fill gaps</li><li>`no` to just leave gaps</li></ul> | str | `top` |
+| dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | `left` |
+| new | Position in the stack for new windows. One of: <ul><li>`top` of the stack</li><li>`bottom` of the stack</li><li>`next` after focused</li><li>`prev` before focused</li><li>`smart` at cursor</li></ul> | str | `bottom` |
 | order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
-| wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | false |
+| wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | `false` |
 
 ### Dispatchers
 
@@ -32,13 +32,14 @@ Most standard Hyprland dispatchers work. Adds the following `layoutmsg` dispatch
 | name | description | params |
 | --- | --- | --- |
 | reset | Resets all settings to the globals. |  |
-| set | Temporarily override any global setting listed in variables with **value**. | \<name> \<value> |
-| unset | Restore one setting to the workspace rule or global variable. | \<name> |
-| toggle | Toggle between **value** and global setting. | \<name> \<value> |
-| cycle | Cycle setting between comma separated **value**s. | \<name> \<value>,\<value>,... |
-| focus | Focus a specific window. | `top` `bottom` `next` `prev` |
+| set | Temporarily override any global setting listed in variables with **value**. | `<name> <value>` |
+| unset | Restore one setting to the workspace rule or global variable. | `<name>` |
+| toggle | Toggle between **value** and global setting. | `<name> <value>` |
+| cycle | Cycle setting between comma separated **value**s. | `<name> <value>,<value>,...` |
+| focus | Focus a specific window in the stack. | `top` `bottom` `next` `prev` |
 | move | Move active window to specific position in stack. | `top` `bottom` `next` `prev` |
 | swap | Swap active window with window in specific position in stack. | `top` `bottom` `next` `prev` |
+| roll | Rotates the stack keeping the focus in the same **position**. | `next` `prev` |
 | next | Preselect position once for next window that opens. Overrides **tag**. | See [new](#variables) |
 
 ### Window rules

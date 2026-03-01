@@ -388,6 +388,19 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
                 swapTargets((*it)->target.lock(), (*other)->target.lock());
             }
         }
+    } else if (args[0].starts_with("roll")) {
+        if (m_gollumData.empty())
+            return {};
+        const auto WIN = Desktop::focusState()->window();
+        if (args[1].starts_with("p")) {
+            std::rotate(m_gollumData.begin(), m_gollumData.end() - 1, m_gollumData.end());
+            if (WIN)
+                layoutMsg("focus p");
+        } else if (args[1].starts_with("n")) {
+            std::rotate(m_gollumData.begin(), m_gollumData.begin() + 1, m_gollumData.end());
+            if (WIN)
+                layoutMsg("focus n");
+        }
     } else if (args[0].starts_with("next")) {
         m_next = args[1];
     } else {
