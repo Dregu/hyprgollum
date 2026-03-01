@@ -26,6 +26,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:order", Hyprlang::STRING{""});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:dir", Hyprlang::STRING{"l"});
     HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:new", Hyprlang::STRING{"b"});
+    HyprlandAPI::addConfigValue(PHANDLE, "plugin:gollum:wrap", Hyprlang::INT{0});
 
     if (!HyprlandAPI::addTiledAlgo(PHANDLE, "gollum", &typeid(Layout::Tiled::CGollumAlgorithm), [] { return makeUnique<Layout::Tiled::CGollumAlgorithm>(); })) {
         HyprlandAPI::addNotification(PHANDLE, "[hyprgollum] addTiledAlgo failed! Can't proceed.", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);

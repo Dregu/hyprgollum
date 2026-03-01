@@ -257,6 +257,7 @@ SP<ITarget> CGollumAlgorithm::getNextCandidate(SP<ITarget> old) {
 }
 
 std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
+    auto     WRAP = getIntOpt("wrap");
     CVarList args(std::string{sv}, 3, ' ', false);
     if (args[0] == "reset") {
         m_gollumOpt.clear();
@@ -289,8 +290,34 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
             return {};
         if (args[1].starts_with("t")) {
             Desktop::focusState()->fullWindowFocus(m_gollumData.front()->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
+            return {};
         } else if (args[1].starts_with("b")) {
             Desktop::focusState()->fullWindowFocus(m_gollumData.back()->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
+            return {};
+        }
+        auto WIN = Desktop::focusState()->window();
+        if (!WIN)
+            return {};
+        auto target = WIN->layoutTarget();
+        auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+        if (args[1].starts_with("p")) {
+            if (it == m_gollumData.end() || it == m_gollumData.begin()) {
+                if (!WRAP && it == m_gollumData.begin())
+                    return {};
+                it = --m_gollumData.end();
+            } else {
+                --it;
+            }
+            Desktop::focusState()->fullWindowFocus((*it)->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
+        } else if (args[1].starts_with("n")) {
+            if (it == m_gollumData.end() || it + 1 == m_gollumData.end()) {
+                if (!WRAP && it + 1 == m_gollumData.end())
+                    return {};
+                it = m_gollumData.begin();
+            } else {
+                ++it;
+            }
+            Desktop::focusState()->fullWindowFocus((*it)->target.lock()->window(), Desktop::FOCUS_REASON_KEYBIND);
         }
     } else if (args[0].starts_with("move")) {
         if (m_gollumData.empty())
@@ -300,11 +327,30 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
             return {};
         auto target = WIN->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+        auto other  = it;
         if (it != m_gollumData.end()) {
             if (args[1].starts_with("t")) {
                 std::rotate(m_gollumData.begin(), it, it + 1);
             } else if (args[1].starts_with("b")) {
                 std::rotate(it, it + 1, m_gollumData.end());
+            } else if (args[1].starts_with("p")) {
+                if (it == m_gollumData.begin()) {
+                    if (!WRAP)
+                        return {};
+                    std::rotate(it, it + 1, m_gollumData.end());
+                } else {
+                    other = it - 1;
+                    swapTargets((*it)->target.lock(), (*other)->target.lock());
+                }
+            } else if (args[1].starts_with("n")) {
+                if (it + 1 == m_gollumData.end()) {
+                    if (!WRAP)
+                        return {};
+                    std::rotate(m_gollumData.begin(), it, it + 1);
+                } else {
+                    other = it + 1;
+                    swapTargets((*it)->target.lock(), (*other)->target.lock());
+                }
             }
         }
     } else if (args[0].starts_with("swap")) {
@@ -315,11 +361,31 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
             return {};
         auto target = WIN->layoutTarget();
         auto it     = std::ranges::find_if(m_gollumData, [target](const auto& data) { return data->target.lock() == target; });
+        auto other  = it;
         if (it != m_gollumData.end()) {
             if (args[1].starts_with("t")) {
                 swapTargets(target, m_gollumData.front()->target.lock());
             } else if (args[1].starts_with("b")) {
                 swapTargets(target, m_gollumData.back()->target.lock());
+            } else if (args[1].starts_with("p")) {
+                if (it == m_gollumData.begin()) {
+                    if (!WRAP)
+                        return {};
+                    other = m_gollumData.end() - 1;
+                } else {
+                    other = it - 1;
+                }
+                swapTargets((*it)->target.lock(), (*other)->target.lock());
+
+            } else if (args[1].starts_with("n")) {
+                if (it + 1 == m_gollumData.end()) {
+                    if (!WRAP)
+                        return {};
+                    other = m_gollumData.begin();
+                } else {
+                    other = it + 1;
+                }
+                swapTargets((*it)->target.lock(), (*other)->target.lock());
             }
         }
     } else if (args[0].starts_with("next")) {

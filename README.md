@@ -23,6 +23,7 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | left |
 | new | Position in the stack for new windows. One of: `top` of the stack, `bottom` of the stack, `next` after focused, `prev` before focused, `smart` at cursor. | str | bottom |
 | order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
+| wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | false |
 
 ### Dispatchers
 
@@ -35,10 +36,10 @@ Most standard Hyprland dispatchers work. Adds the following `layoutmsg` dispatch
 | unset | Restore one setting to the workspace rule or global variable. | \<name> |
 | toggle | Toggle between **value** and global setting. | \<name> \<value> |
 | cycle | Cycle setting between comma separated **value**s. | \<name> \<value>,\<value>,... |
-| focuswindow | Focus a specific window. | `top` or `bottom` |
-| movewindow | Move active window to specific position in stack. | `top` or `bottom` |
-| swapwindow | Swap active window with window in specific position in stack. | `top` or `bottom` |
-| nextwindow | Preselect position once for next window that opens. Overrides **tag**. | See [new](#variables) |
+| focus | Focus a specific window. | `top` `bottom` `next` `prev` |
+| move | Move active window to specific position in stack. | `top` `bottom` `next` `prev` |
+| swap | Swap active window with window in specific position in stack. | `top` `bottom` `next` `prev` |
+| next | Preselect position once for next window that opens. Overrides **tag**. | See [new](#variables) |
 
 ### Window rules
 
@@ -47,7 +48,6 @@ New window position can be overridden by adding the dynamic tag `top` or `bottom
 ### Syntax
 
 - Most options (not tags) can be shortened to their shortest unique prefix, e.g. `b`~~ottom~~, `r`~~ight~~
-- Dispatchers can be shortened to `move`~~window~~
 - Precedence for the settings is roughly `nextwindow > tag > layoutmsg > layoutopt > global variable`
 
 ### Examples
@@ -62,6 +62,7 @@ plugin {
         dir   = r
         new   = top
         order = 0123
+        wrap  = yes
     }
 }
 
