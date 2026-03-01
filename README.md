@@ -6,7 +6,7 @@ so windows are always autosized and the options are few, but powerful.
 
 - By default it just creates a single column with all windows split evenly, great for portrait monitors.
 - The **grid** logic with >1 columns can roughly mimic **master** or **hyprNStack** layouts, prioritizing space for the **top** window until the ideal grid is too full, after which it will also be split automatically **once**.
-- The **order** logic can be used to for a more traditional left-to-right filling if **grid** is too confusing, or it can be used to make something even more confusing.
+- The **order** logic can be used to for a more traditional left-to-right window order, **center master** or something even more confusing.
 
 https://github.com/user-attachments/assets/f3e780ff-6ced-4fa9-a88b-df363df469a7
 
@@ -90,20 +90,30 @@ bind = SUPER SHIFT CTRL, G, layoutmsg, next,        b
 windowrule = match:class firefox|codium, tag +top
 bind = SUPER, Return, exec, [tag +bottom]foot
 
-# cool examples
-workspace = 4, layoutopt:order:1303030, layoutopt:fit:n # like center master with always_keep_position
-workspace = 5, layoutopt:order:1330003, layoutopt:fit:f # like center master but expands top window both ways too
-
 # dev special, some stuff I actually use
 workspace = m[DP-1], layout:gollum, layoutopt:grid:3 2 # ideal layout for 21:9 3440x1440
 workspace = m[DP-1] w[tv1], gapsout:24 596 24 595      # center single window keeping its size uniform with two columns
 workspace = m[DP-1] f[1], gapsout:24 596 24 595        # (when default gaps are 24/12)
-workspace = m[desc:AOC 2963 0x000003A7], layout:gollum, layoutopt:grid:1 1 # portrait ultrawide of course has single column
-workspace = m[desc:AOC 2963 0x000003A7] w[tv1], gapsout:668 24 648 24      # with the same centering trick for single window
+workspace = m[DP-2], layout:gollum, layoutopt:grid:1 1 # portrait ultrawide of course has single column
+workspace = m[DP-2] w[tv1], gapsout:668 24 648 24      # with the same centering trick for single window
 bind = SUPER, X, layoutmsg, toggle grid 3 1 # switch between 3 equal columns and top that covers 2/3 columns
 bind = SUPER, C, layoutmsg, cycle fit f,t   # switch between 2 equal columns and ditto
 bind = SUPER, V, layoutmsg, toggle dir r    # swap top to right
 
+# cool examples
+workspace = 4, layoutopt:order:1303030, layoutopt:fit:n # like center master with always_keep_position
+workspace = 5, layoutopt:order:1330003, layoutopt:fit:f # like center master but expands top window both ways too
+
 # silly stuff that nobody should probably use
 workspace = 10, layoutopt:fit:f, layoutopt:order:01234567899876543210 # just keep making columns until there are way too many, then do a U-turn
 ```
+
+## Contributing
+
+Meh, probably won't care about your issues unless they affect me. Probably won't merge PR unless it's something I didn't realize I needed. Feel free to fork and make it your own though.
+
+## (Not) TODO
+
+- [ ] Manual resizing probably won't be added, maybe for height very temporarily
+- [ ] Moving windows around the columns unevenly is not a goal either, it's automatic
+- [ ] The mfact option from master maybe one day
