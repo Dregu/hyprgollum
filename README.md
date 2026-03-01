@@ -17,10 +17,10 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | name | description | type | default
 | --- | --- | --- | --- |
 | grid | Ideal grid size, defines the max number of columns, the max number of rows in the **top** column, and the ideal number of rows in a **bottom** column before a new column is created. If `#windows > x * y`, extra windows are arranged evenly across **bottom** columns. | vec2 | 1 1 |
-| fit | How to fit columns in the workarea if `#columns < grid.x`. `center` to center small columns, `fill` to fit columns evenly, `top` to grow more important windows to fill gaps. Anything else is undefined behavior. | str | top |
+| fit | How to fit columns in the workarea if `#columns < grid.x`. `center` to center small columns, `fill` to fit columns evenly, `top` to grow more important windows to fill gaps, `no` to just leave gaps. | str | top |
 | dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | left |
 | new | Position in the stack for new windows. One of: `top` of the stack, `bottom` of the stack, `next` after focused, `prev` before focused, `smart` at cursor. | str | bottom |
-| order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of instead of the default grid logic. Overrides `grid`. | str |  |
+| order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
 
 ### Dispatchers
 
@@ -88,16 +88,20 @@ bind = SUPER SHIFT CTRL, G, layoutmsg, next,        b
 windowrule = match:class firefox|codium, tag +top
 bind = SUPER, Return, exec, [tag +bottom]foot
 
+# cool examples
+workspace = 4, layoutopt:order:1303030, layoutopt:fit:n # like center master with always_keep_position
+workspace = 5, layoutopt:order:1330003, layoutopt:fit:f # like center master but expands top window both ways too
+
 # dev special, some stuff I actually use
 workspace = m[DP-1], layout:gollum, layoutopt:grid:3 2 # ideal layout for 21:9 3440x1440
 workspace = m[DP-1] w[tv1], gapsout:24 596 24 595      # center single window keeping its size uniform with two columns
 workspace = m[DP-1] f[1], gapsout:24 596 24 595        # (when default gaps are 24/12)
 workspace = m[desc:AOC 2963 0x000003A7], layout:gollum, layoutopt:grid:1 1 # portrait ultrawide of course has single column
-workspace = m[desc:AOC 2963 0x000003A7] w[tv1], gapsout:668 24 648 24
+workspace = m[desc:AOC 2963 0x000003A7] w[tv1], gapsout:668 24 648 24      # with the same centering trick for single window
 bind = SUPER, X, layoutmsg, toggle grid 3 1 # switch between 3 equal columns and top that covers 2/3 columns
 bind = SUPER, C, layoutmsg, cycle fit f,t   # switch between 2 equal columns and ditto
 bind = SUPER, V, layoutmsg, toggle dir r    # swap top to right
 
 # silly stuff that nobody should probably use
-workspace = 10, layout:gollum, layoutopt:fit:f, layoutopt:order:01234567899876543210 # just keep making columns until there are way too many, then do a U-turn
+workspace = 10, layoutopt:fit:f, layoutopt:order:01234567899876543210 # just keep making columns until there are way too many, then do a U-turn
 ```

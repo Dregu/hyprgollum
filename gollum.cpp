@@ -121,17 +121,21 @@ void CGollumAlgorithm::recalculate() {
         Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
         ORDER = "";
     }
-    int        W    = GRID.x;
-    int        H    = GRID.y;
     const auto N    = m_gollumData.size();
     const auto AREA = m_parent->space()->workArea();
-
+    int        FW   = GRID.x;
+    int        H    = GRID.y;
+    int        OW   = 0;
     if (!ORDER.empty()) {
-        for (size_t i = 0; i < ORDER.size(); ++i)
-            W = std::max((ORDER)[i] - '0' + 1, W);
+        FW = 0;
+        for (size_t i = 0; i < ORDER.size(); ++i) {
+            FW = std::max(ORDER[i] - '0' + 1, FW);
+            if (i < N)
+                OW = std::max(ORDER[i] - '0' + 1, OW);
+        }
     }
 
-    if ((W < 2 && H < 2 && ORDER.empty()) || N == 1) {
+    if ((FW < 2 && H < 2 && ORDER.empty()) /*|| N == 1*/) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
@@ -143,8 +147,8 @@ void CGollumAlgorithm::recalculate() {
             double w = AREA.w;
             double m = 0;
             if (FIT.starts_with("c")) {
-                w = AREA.w / W;
-                m = (W - 1) * w / 2;
+                w = AREA.w / FW;
+                m = (FW - 1) * w / 2;
             }
             const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N, w, AREA.h / N};
             DATA->box      = BOX;
@@ -154,34 +158,25 @@ void CGollumAlgorithm::recalculate() {
     }
 
     std::map<size_t, std::vector<SP<SGollumData>>> cols;
-    int                                            FW = W;
-    int                                            x  = 0;
+    int                                            x = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
         if (!ORDER.empty())
-            x = (ORDER)[i % ORDER.size()] - '0';
+            x = ORDER[i % ORDER.size()] - '0';
         else {
-            if ((i < W * H - 1 && cols[x].size() >= H) || (i >= W * H - 1))
+            if ((i < FW * H - 1 && cols[x].size() >= H) || (i >= FW * H - 1))
                 --x;
-            if ((i == 0 || i == W * H - (H - 1)) && cols[0].size() < H)
+            if ((i == 0 || i == FW * H - (H - 1)) && cols[0].size() < H)
                 x = 0;
             else if (x <= 0)
-                x = W - 1;
+                x = FW - 1;
         }
         cols[x].emplace_back(DATA);
     }
 
-    if ((FIT.starts_with("c") || FIT.starts_with("f")) && cols.size() < W) {
-        size_t empty = W - cols.size();
-        for (size_t i = 0; i < W; ++i) {
-            if (cols[i + 1].empty()) {
-                cols[i + 1] = cols[i + 1 + empty];
-                cols[i + 1 + empty].clear();
-            }
-        }
-        W = W - empty;
-    }
-
+    int                     W = cols.size();
+    size_t                  n = 0;
+    std::unordered_set<int> used;
     for (auto& [x, col] : cols) {
         for (size_t y = 0; y < col.size(); ++y) {
             const auto& DATA   = col[y];
@@ -191,33 +186,64 @@ void CGollumAlgorithm::recalculate() {
             const auto WINDOW = TARGET->window();
             if (!WINDOW)
                 continue;
-            double w = AREA.w / W;
-            double m = 0;
+            double rx = x;
+            double w  = AREA.w / FW;
+            double m  = 0;
             if (FIT.starts_with("c")) {
-                w = AREA.w / FW;
-                m = (FW - W) * w / 2;
+                m  = (FW - W) * w / 2;
+                rx = n;
                 if (DIR.starts_with("r"))
                     m = -m;
+            } else if (FIT.starts_with("f") && ORDER.empty()) {
+                w  = AREA.w / W;
+                rx = n;
+                m  = 0;
+            } else if (FIT.starts_with("f") && !ORDER.empty()) {
+                w = AREA.w / OW;
+                m = 0;
             }
             auto   rw = w;
             int    o  = 0;
             double h  = AREA.h / col.size();
-            if (FIT.starts_with("t")) {
-                for (int i = x + 1; i < W; ++i) {
-                    if (cols[i].empty()) {
+
+            for (int i = x + 1; i < FW; ++i) {
+                if ((FIT.starts_with("t") && !cols.contains(i)) ||
+                    (!ORDER.empty() && !FIT.starts_with("c") && !FIT.starts_with("f") && !FIT.starts_with("t") && !ORDER.contains(std::format("{}", i)))) {
+                    rw += w;
+                    if (DIR.starts_with("r"))
+                        --o;
+                } else
+                    break;
+            }
+
+            if (!ORDER.empty() && FIT.starts_with("f")) {
+                for (int i = x + 1; i < OW; ++i) {
+                    if (!cols.contains(i)) {
                         rw += w;
+                        used.insert(i);
+                        if (DIR.starts_with("r"))
+                            --o;
+                    } else
+                        break;
+                }
+                for (int i = x - 1; i >= 0; --i) {
+                    if (!cols.contains(i) && !used.contains(i)) {
+                        rw += w;
+                        --rx;
                         if (DIR.starts_with("r"))
                             --o;
                     } else
                         break;
                 }
             }
-            auto BOX = CBox{AREA.x + x * w + m, AREA.y + y * h, rw, h};
+
+            auto BOX = CBox{AREA.x + rx * w + m, AREA.y + y * h, rw, h};
             if (DIR.starts_with("r"))
-                BOX = CBox{AREA.x + AREA.w - w - x * w + m + o * w, AREA.y + y * h, rw, h};
+                BOX = CBox{AREA.x + AREA.w - w - rx * w + m + o * w, AREA.y + y * h, rw, h};
             DATA->box = BOX;
             TARGET->setPositionGlobal(BOX);
         }
+        ++n;
     }
 }
 
