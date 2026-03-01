@@ -8,6 +8,8 @@ so windows are always autosized and the options are few, but powerful.
 - The **grid** logic with >1 columns can roughly mimic **master** or **hyprNStack** layouts, prioritizing space for the **top** window until the ideal grid is too full, after which it will also be split automatically **once**.
 - The **order** logic can be used to for a more traditional left-to-right filling if **grid** is too confusing, or it can be used to make something even more confusing.
 
+https://github.com/user-attachments/assets/f3e780ff-6ced-4fa9-a88b-df363df469a7
+
 ## Config
 
 ### Variables
