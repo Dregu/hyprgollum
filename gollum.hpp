@@ -19,9 +19,13 @@ namespace Layout::Tiled {
         SGollumData(SP<ITarget> t) : target(t) {
             ;
         }
+        SGollumData(SP<ITarget> t, bool f) : target(t), fs(f) {
+            ;
+        }
 
         WP<ITarget> target;
         CBox        box;
+        bool        fs{false};
     };
 
     class CGollumAlgorithm : public ITiledAlgorithm {

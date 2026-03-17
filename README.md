@@ -24,6 +24,7 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | new | Position in the stack for new windows. One of: <ul><li>`top` of the stack</li><li>`bottom` of the stack</li><li>`next` after focused</li><li>`prev` before focused</li><li>`smart` at cursor</li></ul> | str | `bottom` |
 | order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
 | wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | `false` |
+| fs | Remove fullscreen node from the layout stack. One of: `0` don't, `1` always, `2` only if created fullscreen or tagged `fs` | int | `2` |
 
 ### Dispatchers
 
@@ -64,6 +65,7 @@ plugin {
         new   = top
         order = 0123
         wrap  = yes
+        fs    = 2
     }
 }
 
@@ -91,6 +93,10 @@ bind = SUPER SHIFT CTRL, G, layoutmsg, next,        b
 # use top/bottom tags to preset placement for specific apps
 windowrule = match:class firefox|codium, tag +top
 bind = SUPER, Return, exec, [tag +bottom]foot
+
+# hide some normally fullscreen windows from the tiled layout stack
+windowrule = match:class mpv, fullscreen on
+windowrule = match:class vlc, tag +fs
 
 # dev special, some stuff I actually use
 workspace = m[DP-1], layout:gollum, layoutopt:grid:3 2 # ideal layout for 21:9 3440x1440

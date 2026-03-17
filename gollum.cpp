@@ -1,6 +1,7 @@
 #include "gollum.hpp"
 
 #include <hyprland/src/debug/log/Logger.hpp>
+#include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/helpers/math/Direction.hpp>
 #include <hyprland/src/layout/algorithm/Algorithm.hpp>
 #include <hyprland/src/layout/space/Space.hpp>
@@ -37,18 +38,22 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     }
 
     bool found = false;
+    bool fs    = target->fullscreenMode() & FSMODE_FULLSCREEN;
+    if (target->window() && !fs)
+        fs = target->window()->m_ruleApplicator->static_.fullscreen.value_or(false) ||
+            (target->window()->m_ruleApplicator->static_.fullscreenStateInternal.value_or(0) & FSMODE_FULLSCREEN) || target->window()->m_ruleApplicator->m_tagKeeper.isTagged("fs");
     if (target->window() && m_next.empty()) {
         if (m_gollumData.empty()) {
-            m_gollumData.emplace_back(makeShared<SGollumData>(target));
+            m_gollumData.emplace_back(makeShared<SGollumData>(target, fs));
             found = true;
         } else if (target->window()->m_ruleApplicator->m_tagKeeper.isTagged("top")) {
             auto it = std::ranges::find_if(m_gollumData, [](const auto& data) { return !data->target.lock()->window()->m_ruleApplicator->m_tagKeeper.isTagged("top"); });
-            m_gollumData.insert(it, makeShared<SGollumData>(target));
+            m_gollumData.insert(it, makeShared<SGollumData>(target, fs));
             found = true;
         } else if (target->window()->m_ruleApplicator->m_tagKeeper.isTagged("bottom")) {
             auto it = std::ranges::find_if(m_gollumData.rbegin(), m_gollumData.rend(),
                                            [](const auto& data) { return !data->target.lock()->window()->m_ruleApplicator->m_tagKeeper.isTagged("bottom"); });
-            m_gollumData.insert(it.base(), makeShared<SGollumData>(target));
+            m_gollumData.insert(it.base(), makeShared<SGollumData>(target, fs));
             found = true;
         }
     }
@@ -58,14 +63,14 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
             auto t  = WIN->layoutTarget();
             auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
             if (++it != m_gollumData.end()) {
-                m_gollumData.insert(it, makeShared<SGollumData>(target));
+                m_gollumData.insert(it, makeShared<SGollumData>(target, fs));
                 found = true;
             }
         } else if (NEW.starts_with("p") && WIN) {
             auto t  = WIN->layoutTarget();
             auto it = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
             if (it != m_gollumData.end()) {
-                m_gollumData.insert(it, makeShared<SGollumData>(target));
+                m_gollumData.insert(it, makeShared<SGollumData>(target, fs));
                 found = true;
             }
         }
@@ -73,9 +78,9 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
 
     if (!found) {
         if (NEW.starts_with("t"))
-            m_gollumData.emplace_front(makeShared<SGollumData>(target));
+            m_gollumData.emplace_front(makeShared<SGollumData>(target, fs));
         else
-            m_gollumData.emplace_back(makeShared<SGollumData>(target));
+            m_gollumData.emplace_back(makeShared<SGollumData>(target, fs));
     }
 
     m_next.clear();
@@ -117,6 +122,7 @@ void CGollumAlgorithm::recalculate() {
     auto FIT   = getStrOpt("fit");
     auto ORDER = getStrOpt("order");
     auto DIR   = getStrOpt("dir");
+    auto FS    = getIntOpt("fs");
     if (!ORDER.empty() && !std::all_of(ORDER.begin(), ORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
         Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
         ORDER = "";
@@ -135,6 +141,10 @@ void CGollumAlgorithm::recalculate() {
         }
     }
 
+    const auto MFS = !FS ? 0 : std::count_if(m_gollumData.begin(), m_gollumData.end(), [FS](const auto& DATA) -> bool {
+        return (DATA->target->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs);
+    });
+    int        NFS = 0;
     if ((FW < 2 && H < 2 && ORDER.empty()) /*|| N == 1*/) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
@@ -144,13 +154,17 @@ void CGollumAlgorithm::recalculate() {
             const auto WINDOW = TARGET->window();
             if (!WINDOW)
                 continue;
+            if (FS && (TARGET->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs)) {
+                ++NFS;
+                continue;
+            }
             double w = AREA.w;
             double m = 0;
             if (FIT.starts_with("c")) {
                 w = AREA.w / FW;
                 m = (FW - 1) * w / 2;
             }
-            const auto BOX = CBox{AREA.x + m, AREA.y + i * AREA.h / N, w, AREA.h / N};
+            const auto BOX = CBox{AREA.x + m, AREA.y + (i - NFS) * AREA.h / (N - MFS), w, AREA.h / (N - MFS)};
             DATA->box      = BOX;
             TARGET->setPositionGlobal(BOX);
         }
@@ -161,12 +175,17 @@ void CGollumAlgorithm::recalculate() {
     int                                            x = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
+        if (FS && (DATA->target->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs)) {
+            ++NFS;
+            continue;
+        }
+        auto ri = i - NFS;
         if (!ORDER.empty())
-            x = ORDER[i % ORDER.size()] - '0';
+            x = ORDER[ri % ORDER.size()] - '0';
         else {
-            if ((i < FW * H - 1 && cols[x].size() >= H) || (i >= FW * H - 1))
+            if ((ri < FW * H - 1 && cols[x].size() >= H) || (ri >= FW * H - 1))
                 --x;
-            if ((i == 0 || i == FW * H - (H - 1)) && cols[0].size() < H)
+            if ((ri == 0 || ri == FW * H - (H - 1)) && cols[0].size() < H)
                 x = 0;
             else if (x <= 0)
                 x = FW - 1;
