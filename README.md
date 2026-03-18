@@ -25,6 +25,7 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
 | wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | `false` |
 | fs | Remove fullscreen node from the layout stack. One of: `0` don't, `1` always, `2` only if created fullscreen or tagged `fs` | int | `2` |
+| mono | Treat this fullscreen mode as monocle, i.e. maximize all nodes, so cycling doesn't cause resizes. One of: `0` none, `1` maximize, `2` fullscreen, `3` both | int | `1` |
 
 ### Dispatchers
 
@@ -66,6 +67,7 @@ plugin {
         order = 0123
         wrap  = yes
         fs    = 2
+        mono  = 3
     }
 }
 

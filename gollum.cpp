@@ -123,15 +123,38 @@ void CGollumAlgorithm::recalculate() {
     auto ORDER = getStrOpt("order");
     auto DIR   = getStrOpt("dir");
     auto FS    = getIntOpt("fs");
+    auto MONO  = getIntOpt("mono");
     if (!ORDER.empty() && !std::all_of(ORDER.begin(), ORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
         Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
         ORDER = "";
     }
-    const auto N    = m_gollumData.size();
-    const auto AREA = m_parent->space()->workArea();
-    int        FW   = GRID.x;
-    int        H    = GRID.y;
-    int        OW   = 0;
+    const auto  N           = m_gollumData.size();
+    const auto  AREA        = m_parent->space()->workArea();
+    static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
+
+    if (MONO && m_parent->space()->workspace()->m_fullscreenMode & MONO) {
+        for (size_t i = 0; i < N; ++i) {
+            const auto& DATA   = m_gollumData[i];
+            const auto  TARGET = DATA->target.lock();
+            if (!TARGET)
+                continue;
+            const int BORDER = TARGET->window() ? TARGET->window()->getRealBorderSize() : 0;
+            if (m_parent->space()->workspace()->m_fullscreenMode == FSMODE_MAXIMIZED) {
+                DATA->box = AREA;
+                TARGET->setPositionGlobal(AREA);
+            } else {
+                const auto MON = m_parent->space()->workspace()->m_monitor->logicalBox().expand(BORDER);
+                const auto BOX = STargetBox{.logicalBox = MON, .visualBox = MON};
+                DATA->box      = MON;
+                TARGET->setPositionGlobal(BOX);
+            }
+        }
+        return;
+    }
+
+    int FW = GRID.x;
+    int H  = GRID.y;
+    int OW = 0;
     if (!ORDER.empty()) {
         FW = 0;
         for (size_t i = 0; i < ORDER.size(); ++i) {
@@ -150,9 +173,6 @@ void CGollumAlgorithm::recalculate() {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
             if (!TARGET)
-                continue;
-            const auto WINDOW = TARGET->window();
-            if (!WINDOW)
                 continue;
             if (FS && (TARGET->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs)) {
                 ++NFS;
@@ -201,9 +221,6 @@ void CGollumAlgorithm::recalculate() {
             const auto& DATA   = col[y];
             const auto  TARGET = DATA->target.lock();
             if (!TARGET)
-                continue;
-            const auto WINDOW = TARGET->window();
-            if (!WINDOW)
                 continue;
             double rx = x;
             double w  = AREA.w / FW;
