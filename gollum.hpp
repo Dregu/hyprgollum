@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hyprland/src/plugins/PluginAPI.hpp>
+
 #include <string_view>
 #include <expected>
 #include <deque>
@@ -30,7 +32,7 @@ namespace Layout::Tiled {
 
     class CGollumAlgorithm : public ITiledAlgorithm {
       public:
-        CGollumAlgorithm()          = default;
+        CGollumAlgorithm(HANDLE h) : PHANDLE(h) {};
         virtual ~CGollumAlgorithm() = default;
 
         virtual void                             newTarget(SP<ITarget> target);
@@ -49,6 +51,7 @@ namespace Layout::Tiled {
         virtual SP<ITarget>                      getNextCandidate(SP<ITarget> old);
 
       private:
+        HANDLE                                       PHANDLE;
         std::deque<SP<SGollumData>>                  m_gollumData;
         std::unordered_map<std::string, std::string> m_gollumOpt;
         std::string                                  m_next;

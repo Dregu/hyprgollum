@@ -8,14 +8,17 @@
 #include "hyprland/src/layout/target/WindowTarget.hpp"
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
-#include <hyprland/src/config/ConfigManager.hpp>
+#include <hyprland/src/config/shared/workspace/WorkspaceRuleManager.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprutils/string/String.hpp>
+#include <hyprutils/string/VarList.hpp>
+#include <hyprland/src/helpers/Monitor.hpp>
 
 #include <cstring>
 
 using namespace Layout;
 using namespace Layout::Tiled;
+using namespace Hyprutils::String;
 
 void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     auto NEW = getStrOpt("new");
@@ -510,19 +513,19 @@ SP<SGollumData> CGollumAlgorithm::getClosestNode(const Vector2D& point) {
 }
 
 std::string CGollumAlgorithm::getStrOpt(const std::string& opt) {
-    const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
-        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
+    const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
+    if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         return VALUE.c_str();
     }
-    return *CConfigValue<Hyprlang::STRING>("plugin:gollum:" + opt);
+    return std::string{std::any_cast<const char*>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue())};
 }
 
 Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
-    const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
-        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
+    const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
+    if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
         if (VALUE.starts_with("true") || VALUE.starts_with("on") || VALUE.starts_with("yes"))
@@ -534,13 +537,13 @@ Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
             return x;
         } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, VALUE, e.what()); }
     }
-    return *CConfigValue<Hyprlang::INT>("plugin:gollum:" + opt);
+    return std::any_cast<Hyprlang::INT>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue());
 }
 
 Hyprlang::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
-    const auto WSRULE = g_pConfigManager->getWorkspaceRuleFor(m_parent->space()->workspace());
-    if (WSRULE.layoutopts.contains(opt) || m_gollumOpt.contains(opt)) {
-        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.layoutopts.at(opt);
+    const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
+    if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
+        auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Hyprlang::INT x;
         Hyprlang::INT y;
@@ -551,5 +554,5 @@ Hyprlang::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
             return Hyprlang::VEC2(x, y);
         } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, VALUE, e.what()); }
     }
-    return *CConfigValue<Hyprlang::VEC2>("plugin:gollum:" + opt);
+    return std::any_cast<Hyprlang::VEC2>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue());
 }
