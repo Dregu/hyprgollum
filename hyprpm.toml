@@ -3,6 +3,7 @@ name = "hyprgollum"
 authors = ["Dregu"]
 commit_pins = [
     ["59f9f2688ac508a0584d1462151195a6c4992f99", "6c71107a7b22d8b99a60721ee39c91d9cc57f723"], # 0.54.2
+    ["521ece463c4a9d3d128670688a34756805a4328f", "6c71107a7b22d8b99a60721ee39c91d9cc57f723"], # 0.54.3
 ]
 
 [hyprgollum]
