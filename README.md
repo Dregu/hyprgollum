@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/f3e780ff-6ced-4fa9-a88b-df363df469a7
 
 ### Variables
 
-Category `plugin:gollum:`. All global settings can also be set with `layoutopt` and `layoutmsg` to override them in more specific scenarios. See [examples](#examples).
+Category `plugin.gollum.`. All global settings can also be set with `layout_opts` and `hl.dsp.layout` to override them in more specific scenarios. See [examples](#examples).
 
 | name | description | type | default
 | --- | --- | --- | --- |
@@ -23,13 +23,13 @@ Category `plugin:gollum:`. All global settings can also be set with `layoutopt` 
 | dir | Direction/orientation, the side where the **top** window is. One of: `left`, `right` | str | `left` |
 | new | Position in the stack for new windows. One of: <ul><li>`top` of the stack</li><li>`bottom` of the stack</li><li>`next` after focused</li><li>`prev` before focused</li><li>`smart` at cursor</li></ul> | str | `bottom` |
 | order | Repeating pattern of column numbers `0..9` (0-indexed) to place new windows in the order of, overriding **grid**. Gaps between columns are always filled from the top side, even if **fit** is disabled. See [cool examples](#examples). | str |  |
-| wrap | Enables wrapping around the end of the stack on certain dispatchers. | bool | `false` |
+| wrap | Enables wrapping around the end of the stack on certain dispatchers. | int | `0` |
 | fs | Remove fullscreen node from the layout stack. One of: `0` don't, `1` always, `2` only if created fullscreen or tagged `fs` | int | `2` |
 | mono | Treat this fullscreen mode as monocle, i.e. maximize all nodes, so cycling doesn't cause resizes. One of: `0` none, `1` maximize, `2` fullscreen, `3` both | int | `1` |
 
 ### Dispatchers
 
-Most standard Hyprland dispatchers work. Adds the following `layoutmsg` dispatchers.
+Most standard Hyprland dispatchers work. Adds the following `hl.dsp.layout` dispatchers.
 
 | name | description | params |
 | --- | --- | --- |
@@ -55,67 +55,65 @@ New window position can be overridden by adding the dynamic tag `top` or `bottom
 
 ### Examples
 
-```ini
-general:layout = gollum
-
-plugin {
-    gollum {
-        grid  = 2 2
-        fit   = c
-        dir   = r
-        new   = top
-        order = 0123
-        wrap  = yes
-        fs    = 2
-        mono  = 3
+```lua
+hl.config{
+    general = {
+        layout = 'gollum'
+    },
+    plugin = {
+        gollum = {
+            grid  = { 2, 2 },
+            fit   = 'c',
+            dir   = 'r',
+            new   = 'top',
+            order = '0123',
+            wrap  = 1,
+            fs    = 2,
+            mono  = 3,
+        }
     }
 }
 
-# all options can also be used with layoutopt workspace rules
-workspace = m[HDMI-A-2], layout:gollum, layoutopt:grid:1 1
-workspace = 3, layout:gollum, layoutopt:order:0123, layoutopt:fit:center
+-- all options can also be used with layoutopt workspace rules
+hl.workspace_rule{ workspace = 'm[HDMI-A-2]', layout = 'gollum', layout_opts = { grid = '1 1' } }
+hl.workspace_rule{ workspace = 3, layout = 'gollum', layout_opts = { order = '0123', fit = 'center' } }
 
-# all options can also be used with layoutmsg binds: set, unset, toggle, cycle, reset
-bind = SUPER, Z, layoutmsg, reset
-bind = SUPER, X, layoutmsg, set grid 1 1
-bind = SUPER, C, layoutmsg, toggle grid 2 2
-bind = SUPER, V, layoutmsg, cycle grid 1 1,2 1,3 2,4 2
-bind = SUPER, B, layoutmsg, cycle fit f,c
+-- all options can also be used with layoutmsg binds: set, unset, toggle, cycle, reset
+hl.bind('SUPER+Z', hl.dsp.layout('reset'))
+hl.bind('SUPER+X', hl.dsp.layout('set grid 1 1'))
+hl.bind('SUPER+C', hl.dsp.layout('toggle grid 2 2'))
+hl.bind('SUPER+V', hl.dsp.layout('cycle grid 1 1,2 1,3 2,4 2'))
+hl.bind('SUPER+B', hl.dsp.layout('cycle fit f,c'))
 
-# these dispatchers can mimic promoting to master on some grid setups
-bind = SUPER,            T, layoutmsg, focuswindow, top
-bind = SUPER,            G, layoutmsg, focus,       bottom
-bind = SUPER SHIFT,      T, layoutmsg, movewindow,  top
-bind = SUPER SHIFT,      G, layoutmsg, move,        bot
-bind = SUPER CTRL,       T, layoutmsg, swapwindow,  t
-bind = SUPER CTRL,       G, layoutmsg, swap,        b
-bind = SUPER SHIFT CTRL, T, layoutmsg, nextwindow,  t
-bind = SUPER SHIFT CTRL, G, layoutmsg, next,        b
+-- these dispatchers can mimic promoting to master on some grid setups
+hl.bind('SUPER+T', hl.dsp.layout('focus top'))
+hl.bind('SUPER+G', hl.dsp.layout('focus bottom'))
+hl.bind('SUPER+SHIFT+T', hl.dsp.layout('move top'))
+hl.bind('SUPER+SHIFT+G', hl.dsp.layout('move bot'))
+hl.bind('SUPER+CTRL+T', hl.dsp.layout('swap t'))
+hl.bind('SUPER+CTRL+G', hl.dsp.layout('swap b'))
+hl.bind('SUPER+SHIFT+CTRL+T', hl.dsp.layout('next t'))
+hl.bind('SUPER+SHIFT+CTRL+G', hl.dsp.layout('next b'))
 
-# use top/bottom tags to preset placement for specific apps
-windowrule = match:class firefox|codium, tag +top
-bind = SUPER, Return, exec, [tag +bottom]foot
+-- use top/bottom tags to preset placement for specific apps
+hl.window_rule{ match = { class = 'firefox|codium' }, tag = '+top' }
+hl.bind('SUPER+Return' hl.dsp.exec_cmd('foot', { tag = '+bottom' }))
 
-# hide some normally fullscreen windows from the tiled layout stack
-windowrule = match:class mpv, fullscreen on
-windowrule = match:class vlc, tag +fs
+-- hide some normally fullscreen windows from the tiled layout stack
+hl.window_rule{ match = { class = 'mpv' }, fullscreen = true }
+hl.window_rule{ match = { class = 'vlc' }, tag = '+fs' }
 
-# dev special, some stuff I actually use
-workspace = m[DP-1], layout:gollum, layoutopt:grid:3 2 # ideal layout for 21:9 3440x1440
-workspace = m[DP-1] w[tv1], gapsout:24 596 24 595      # center single window keeping its size uniform with two columns
-workspace = m[DP-1] f[1], gapsout:24 596 24 595        # (when default gaps are 24/12)
-workspace = m[DP-2], layout:gollum, layoutopt:grid:1 1 # portrait ultrawide of course has single column
-workspace = m[DP-2] w[tv1], gapsout:668 24 648 24      # with the same centering trick for single window
-bind = SUPER, X, layoutmsg, toggle grid 3 1 # switch between 3 equal columns and top that covers 2/3 columns
-bind = SUPER, C, layoutmsg, cycle fit f,t   # switch between 2 equal columns and ditto
-bind = SUPER, V, layoutmsg, toggle dir r    # swap top to right
+-- dev special, some stuff I actually use
+hl.workspace_rule{ workspace = 'm[DP-1]', layout = 'gollum', layout_opts = { grid = '3 2' } } -- ideal layout for 21:9 3440x1440
+hl.workspace{ workspace = 'm[DP-1] w[tv1]', gaps_out = { 24, 596, 24, 595 } }     -- center single window keeping its size uniform with two columns
+hl.workspace{ workspace = 'm[DP-1] f[1]', gaps_out = { 24, 596, 24, 595 } }       -- (when default gaps are 24/12)
+hl.bind('SUPER+X', hl.dsp.layout('toggle grid 3 1')) -- switch between 3 equal columns and top that covers 2/3 columns
+hl.bind('SUPER+C', hl.dsp.layout('cycle fit f,t'))   -- switch between 2 equal columns and ditto
+hl.bind('SUPER+V', hl.dsp.layout('toggle dir r'))    -- swap top to right
 
-# cool examples
-workspace = 4, layoutopt:order:1303030, layoutopt:fit:n # like center master with always_keep_position
-workspace = 5, layoutopt:order:1330003, layoutopt:fit:f # like center master but expands top window both ways too
-
-# silly stuff that nobody should probably use
-workspace = 10, layoutopt:fit:f, layoutopt:order:01234567899876543210 # just keep making columns until there are way too many, then do a U-turn
+-- cool examples
+hl.workspace_rule{ workspace = 4, layout_opts = { order = '1303030', fit = 'n' } } -- like center master with always_keep_position
+hl.workspace_rule{ workspace = 5, layout_opts = { order = '1330003', fit = 'f' } } -- like center master but expands top window both ways too
 ```
 
 ## Contributing

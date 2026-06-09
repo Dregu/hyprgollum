@@ -12,7 +12,9 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/string/VarList.hpp>
-#include <hyprland/src/helpers/Monitor.hpp>
+#include <hyprland/src/output/Monitor.hpp>
+#include <hyprland/src/config/values/types/IntValue.hpp>
+#include <hyprland/src/config/values/types/StringValue.hpp>
 
 #include <cstring>
 
@@ -117,7 +119,7 @@ void CGollumAlgorithm::removeTarget(SP<ITarget> target) {
 
 void CGollumAlgorithm::resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner) {}
 
-void CGollumAlgorithm::recalculate() {
+void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
     if (m_gollumData.empty())
         return;
 
@@ -133,7 +135,7 @@ void CGollumAlgorithm::recalculate() {
     }
     const auto  N           = m_gollumData.size();
     const auto  AREA        = m_parent->space()->workArea();
-    static auto PBORDERSIZE = CConfigValue<Hyprlang::INT>("general:border_size");
+    static auto PBORDERSIZE = CConfigValue<Config::INTEGER>("general:border_size");
 
     if (MONO && m_parent->space()->workspace()->m_fullscreenMode & MONO) {
         for (size_t i = 0; i < N; ++i) {
@@ -295,7 +297,7 @@ SP<ITarget> CGollumAlgorithm::getNextCandidate(SP<ITarget> old) {
     return nullptr;
 }
 
-std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
+Config::ErrorResult CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
     auto     WRAP = getIntOpt("wrap");
     CVarList args(std::string{sv}, 3, ' ', false);
     if (args[0] == "reset") {
@@ -444,7 +446,7 @@ std::expected<void, std::string> CGollumAlgorithm::layoutMsg(const std::string_v
         m_next = args[1];
     } else {
         Log::logger->log(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
-        return std::unexpected("nope");
+        return Config::configError("nope", Config::eConfigErrorLevel::ERROR, Config::eConfigErrorCode::INVALID_ARGUMENT);
     }
     recalculate();
     return {};
@@ -466,7 +468,7 @@ void CGollumAlgorithm::swapTargets(SP<ITarget> a, SP<ITarget> b) {
 }
 
 void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent) {
-    static auto PMONITORFALLBACK = CConfigValue<Hyprlang::INT>("binds:window_direction_monitor_fallback");
+    static auto PMONITORFALLBACK = CConfigValue<Config::INTEGER>("binds:window_direction_monitor_fallback");
     if (!t || !t->space() || !t->space()->workspace())
         return;
     if (t->window())
@@ -512,22 +514,22 @@ SP<SGollumData> CGollumAlgorithm::getClosestNode(const Vector2D& point) {
     return res;
 }
 
-std::string CGollumAlgorithm::getStrOpt(const std::string& opt) {
+Config::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         return VALUE.c_str();
     }
-    return std::string{std::any_cast<const char*>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue())};
+    return *CConfigValue<Config::STRING>("plugin:gollum:" + opt);
 }
 
-Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
+Config::INTEGER CGollumAlgorithm::getIntOpt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
-        Hyprlang::INT x;
+        Config::INTEGER x;
         if (VALUE.starts_with("true") || VALUE.starts_with("on") || VALUE.starts_with("yes"))
             return 1;
         else if (VALUE.starts_with("false") || VALUE.starts_with("off") || VALUE.starts_with("no"))
@@ -537,22 +539,22 @@ Hyprlang::INT CGollumAlgorithm::getIntOpt(const std::string& opt) {
             return x;
         } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, VALUE, e.what()); }
     }
-    return std::any_cast<Hyprlang::INT>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue());
+    return *CConfigValue<Config::INTEGER>("plugin:gollum:" + opt);
 }
 
-Hyprlang::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
+Config::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
         Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
-        Hyprlang::INT x;
-        Hyprlang::INT y;
-        CVarList2     args(std::string{VALUE}, 0, ' ', false);
+        Config::INTEGER x;
+        Config::INTEGER y;
+        CVarList2       args(std::string{VALUE}, 0, ' ', false);
         try {
             x = std::stol(std::string(args[0]));
             y = std::stol(std::string(args[1]));
-            return Hyprlang::VEC2(x, y);
+            return Config::VEC2(x, y);
         } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, VALUE, e.what()); }
     }
-    return std::any_cast<Hyprlang::VEC2>(HyprlandAPI::getConfigValue(PHANDLE, "plugin:gollum:" + opt)->getValue());
+    return *CConfigValue<Config::VEC2>("plugin:gollum:" + opt);
 }
