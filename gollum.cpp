@@ -452,11 +452,11 @@ Config::ErrorResult CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
     return {};
 }
 
-std::optional<Vector2D> CGollumAlgorithm::predictSizeForNewTarget() {
+/*std::optional<Vector2D> CGollumAlgorithm::predictSizeForNewTarget() {
     const auto N    = m_gollumData.size() + 1;
     const auto AREA = m_parent->space()->workArea();
     return {{AREA.w, AREA.h / N}};
-}
+}*/
 
 void CGollumAlgorithm::swapTargets(SP<ITarget> a, SP<ITarget> b) {
     auto nodeA = dataFor(a);

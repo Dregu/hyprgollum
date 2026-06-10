@@ -35,20 +35,20 @@ namespace Layout::Tiled {
         CGollumAlgorithm(HANDLE h) : PHANDLE(h) {};
         virtual ~CGollumAlgorithm() = default;
 
-        virtual void                    newTarget(SP<ITarget> target);
-        virtual void                    movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint = std::nullopt);
-        virtual void                    removeTarget(SP<ITarget> target);
+        virtual void                newTarget(SP<ITarget> target);
+        virtual void                movedTarget(SP<ITarget> target, std::optional<Vector2D> focalPoint = std::nullopt);
+        virtual void                removeTarget(SP<ITarget> target);
 
-        virtual void                    resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
-        virtual void                    recalculate(eRecalculateReason reason = RECALCULATE_REASON_UNKNOWN);
+        virtual void                resizeTarget(const Vector2D& Δ, SP<ITarget> target, eRectCorner corner = CORNER_NONE);
+        virtual void                recalculate(eRecalculateReason reason = RECALCULATE_REASON_UNKNOWN);
 
-        virtual void                    swapTargets(SP<ITarget> a, SP<ITarget> b);
-        virtual void                    moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent);
+        virtual void                swapTargets(SP<ITarget> a, SP<ITarget> b);
+        virtual void                moveTargetInDirection(SP<ITarget> t, Math::eDirection dir, bool silent);
 
-        virtual Config::ErrorResult     layoutMsg(const std::string_view& sv);
-        virtual std::optional<Vector2D> predictSizeForNewTarget();
+        virtual Config::ErrorResult layoutMsg(const std::string_view& sv);
+        //virtual std::optional<Vector2D> predictSizeForNewTarget();
 
-        virtual SP<ITarget>             getNextCandidate(SP<ITarget> old);
+        virtual SP<ITarget> getNextCandidate(SP<ITarget> old);
 
       private:
         HANDLE                                       PHANDLE;
