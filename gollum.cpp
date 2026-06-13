@@ -15,6 +15,7 @@
 #include <hyprland/src/output/Monitor.hpp>
 #include <hyprland/src/config/values/types/IntValue.hpp>
 #include <hyprland/src/config/values/types/StringValue.hpp>
+#include <hyprland/src/state/MonitorState.hpp>
 
 #include <cstring>
 
@@ -476,7 +477,7 @@ void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir
     const auto POS = t->position().middle();
     auto       NEW = g_pCompositor->getWindowInDirection(t->window(), dir);
     if (!NEW || !dataFor(NEW->layoutTarget())) {
-        const auto PMONINDIR = g_pCompositor->getMonitorInDirection(t->space()->workspace()->m_monitor.lock(), dir);
+        const auto PMONINDIR = State::monitorState()->query().relativeTo(t->space()->workspace()->m_monitor.lock()).inDirection(dir).run();
         if (*PMONITORFALLBACK && PMONINDIR && PMONINDIR != t->space()->workspace()->m_monitor.lock()) {
             const auto TARGETWS = PMONINDIR->m_activeWorkspace;
             t->assignToSpace(TARGETWS->m_space);
