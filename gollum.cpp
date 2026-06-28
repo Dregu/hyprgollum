@@ -475,7 +475,7 @@ void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir
     if (t->window())
         t->window()->setAnimationsToMove();
     const auto POS = t->position().middle();
-    auto       NEW = g_pCompositor->getWindowInDirection(t->window(), dir);
+    auto       NEW = Desktop::windowState()->query().inDirection(t->window(), dir);
     if (!NEW || !dataFor(NEW->layoutTarget())) {
         const auto PMONINDIR = State::monitorState()->query().relativeTo(t->space()->workspace()->m_monitor.lock()).inDirection(dir).run();
         if (*PMONITORFALLBACK && PMONINDIR && PMONINDIR != t->space()->workspace()->m_monitor.lock()) {
