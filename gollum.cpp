@@ -16,12 +16,19 @@
 #include <hyprland/src/config/values/types/IntValue.hpp>
 #include <hyprland/src/config/values/types/StringValue.hpp>
 #include <hyprland/src/state/MonitorState.hpp>
+#include "hyprland/src/managers/fullscreen/FullscreenController.hpp"
 
 #include <cstring>
 
 using namespace Layout;
 using namespace Layout::Tiled;
 using namespace Hyprutils::String;
+
+bool isFullscreen(SP<ITarget> target) {
+    if (!target || !target->space())
+        return false;
+    return Fullscreen::controller()->getFullscreenModes(target->workspace()).internal & Fullscreen::FSMODE_FULLSCREEN;
+}
 
 void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     auto NEW = getStrOpt("new");
@@ -44,10 +51,11 @@ void CGollumAlgorithm::newTarget(SP<ITarget> target) {
     }
 
     bool found = false;
-    bool fs    = target->fullscreenMode() & FSMODE_FULLSCREEN;
+    bool fs    = isFullscreen(target);
     if (target->window() && !fs)
         fs = target->window()->m_ruleApplicator->static_.fullscreen.value_or(false) ||
-            (target->window()->m_ruleApplicator->static_.fullscreenStateInternal.value_or(0) & FSMODE_FULLSCREEN) || target->window()->m_ruleApplicator->m_tagKeeper.isTagged("fs");
+            (target->window()->m_ruleApplicator->static_.fullscreenStateInternal.value_or(0) & Fullscreen::FSMODE_FULLSCREEN) ||
+            target->window()->m_ruleApplicator->m_tagKeeper.isTagged("fs");
     if (target->window() && m_next.empty()) {
         if (m_gollumData.empty()) {
             m_gollumData.emplace_back(makeShared<SGollumData>(target, fs));
@@ -138,14 +146,14 @@ void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
     const auto  AREA        = m_parent->space()->workArea();
     static auto PBORDERSIZE = CConfigValue<Config::INTEGER>("general:border_size");
 
-    if (MONO && m_parent->space()->workspace()->m_fullscreenMode & MONO) {
+    if (MONO && Fullscreen::controller()->getFullscreenModes(m_parent->space()->workspace()).internal & MONO) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
             if (!TARGET)
                 continue;
             const int BORDER = TARGET->window() ? TARGET->window()->getRealBorderSize() : 0;
-            if (m_parent->space()->workspace()->m_fullscreenMode == FSMODE_MAXIMIZED) {
+            if (Fullscreen::controller()->getFullscreenModes(m_parent->space()->workspace()).internal == Fullscreen::FSMODE_MAXIMIZED) {
                 DATA->box = AREA;
                 TARGET->setPositionGlobal(AREA);
             } else {
@@ -170,17 +178,16 @@ void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
         }
     }
 
-    const auto MFS = !FS ? 0 : std::count_if(m_gollumData.begin(), m_gollumData.end(), [FS](const auto& DATA) -> bool {
-        return (DATA->target->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs);
-    });
-    int        NFS = 0;
+    const auto MFS =
+        !FS ? 0 : std::count_if(m_gollumData.begin(), m_gollumData.end(), [FS](const auto& DATA) -> bool { return (isFullscreen(DATA->target.lock())) && (FS == 1 || DATA->fs); });
+    int NFS = 0;
     if ((FW < 2 && H < 2 && ORDER.empty()) /*|| N == 1*/) {
         for (size_t i = 0; i < N; ++i) {
             const auto& DATA   = m_gollumData[i];
             const auto  TARGET = DATA->target.lock();
             if (!TARGET)
                 continue;
-            if (FS && (TARGET->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs)) {
+            if (FS && (isFullscreen(TARGET)) && (FS == 1 || DATA->fs)) {
                 ++NFS;
                 continue;
             }
@@ -201,7 +208,7 @@ void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
     int                                            x = 0;
     for (size_t i = 0; i < N; ++i) {
         const auto& DATA = m_gollumData[i];
-        if (FS && (DATA->target->fullscreenMode() & FSMODE_FULLSCREEN) && (FS == 1 || DATA->fs)) {
+        if (FS && (isFullscreen(DATA->target.lock())) && (FS == 1 || DATA->fs)) {
             ++NFS;
             continue;
         }

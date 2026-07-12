@@ -23,5 +23,6 @@ pkg_check_modules(deps REQUIRED IMPORTED_TARGET
     xkbcommon
 )
 target_link_libraries(hyprgollum PRIVATE rt PkgConfig::deps)
+target_compile_options(hyprgollum PRIVATE -Wno-unused-result)
 
 install(TARGETS hyprgollum)
