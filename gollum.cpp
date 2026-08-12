@@ -108,7 +108,8 @@ void CGollumAlgorithm::movedTarget(SP<ITarget> target, std::optional<Vector2D> f
             auto       t      = NODE->target.lock();
             auto       it     = std::ranges::find_if(m_gollumData, [t](const auto& data) { return data->target.lock() == t; });
             const auto MIDDLE = t->position().middle();
-            if (MIDDLE.y < MOUSECOORDS.y)
+            if ((t != m_gollumData[0]->target.lock() && MIDDLE.y < MOUSECOORDS.y) || (MIDDLE.x < MOUSECOORDS.x && !getStrOpt("dir").starts_with("r")) ||
+                (MIDDLE.x >= MOUSECOORDS.x && getStrOpt("dir").starts_with("r")))
                 ++it;
             m_gollumData.insert(it, makeShared<SGollumData>(target));
             recalculate();
