@@ -5,7 +5,7 @@
 #include <hyprland/src/helpers/math/Direction.hpp>
 #include <hyprland/src/layout/algorithm/Algorithm.hpp>
 #include <hyprland/src/layout/space/Space.hpp>
-#include "hyprland/src/layout/target/WindowTarget.hpp"
+#include "hyprland/src/desktop/view/window/WindowPresentation.hpp"
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/config/ConfigValue.hpp>
 #include <hyprland/src/config/shared/workspace/WorkspaceRuleManager.hpp>
@@ -153,7 +153,7 @@ void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
             const auto  TARGET = DATA->target.lock();
             if (!TARGET)
                 continue;
-            const int BORDER = TARGET->window() ? TARGET->window()->getRealBorderSize() : 0;
+            const int BORDER = TARGET->window() ? TARGET->window()->presentation().borderSize() : 0;
             if (Fullscreen::controller()->getFullscreenModes(m_parent->space()->workspace()).internal == Fullscreen::FSMODE_MAXIMIZED) {
                 DATA->box = AREA;
                 TARGET->setPositionGlobal(AREA);
@@ -481,7 +481,7 @@ void CGollumAlgorithm::moveTargetInDirection(SP<ITarget> t, Math::eDirection dir
     if (!t || !t->space() || !t->space()->workspace())
         return;
     if (t->window())
-        t->window()->setAnimationsToMove();
+        t->window()->presentation().setAnimationsToMove();
     const auto POS = t->position().middle();
     auto       NEW = Desktop::windowState()->query().inDirection(t->window(), dir);
     if (!NEW || !dataFor(NEW->layoutTarget())) {
