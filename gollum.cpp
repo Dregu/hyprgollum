@@ -140,7 +140,7 @@ void CGollumAlgorithm::recalculate(eRecalculateReason reason) {
     auto FS    = getIntOpt("fs");
     auto MONO  = getIntOpt("mono");
     if (!ORDER.empty() && !std::all_of(ORDER.begin(), ORDER.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) {
-        Log::logger->log(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
+        LOG(Log::ERR, "[hyprgollum] order = {} is not a number", ORDER);
         ORDER = "";
     }
     const auto  N           = m_gollumData.size();
@@ -454,7 +454,7 @@ Config::ErrorResult CGollumAlgorithm::layoutMsg(const std::string_view& sv) {
     } else if (args[0].starts_with("next")) {
         m_next = args[1];
     } else {
-        Log::logger->log(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
+        LOG(Log::ERR, "[hyprgollum] Unknown layoutmsg: {}", std::string{sv});
         return Config::configError("nope", Config::eConfigErrorLevel::ERROR, Config::eConfigErrorCode::INVALID_ARGUMENT);
     }
     recalculate();
@@ -527,7 +527,7 @@ Config::STRING CGollumAlgorithm::getStrOpt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
+        LOG(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         return VALUE.c_str();
     }
     return *CConfigValue<Config::STRING>("plugin:gollum:" + opt);
@@ -537,7 +537,7 @@ Config::INTEGER CGollumAlgorithm::getIntOpt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
+        LOG(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Config::INTEGER x;
         if (VALUE.starts_with("true") || VALUE.starts_with("on") || VALUE.starts_with("yes"))
             return 1;
@@ -546,7 +546,7 @@ Config::INTEGER CGollumAlgorithm::getIntOpt(const std::string& opt) {
         try {
             x = std::stol(std::string{VALUE});
             return x;
-        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, VALUE, e.what()); }
+        } catch (std::exception& e) { LOG(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not INT: {}", opt, VALUE, e.what()); }
     }
     return *CConfigValue<Config::INTEGER>("plugin:gollum:" + opt);
 }
@@ -555,7 +555,7 @@ Config::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
     const auto WSRULE = Config::workspaceRuleMgr()->getWorkspaceRuleFor(m_parent->space()->workspace());
     if ((WSRULE.has_value() && WSRULE.value().m_layoutopts.contains(opt)) || m_gollumOpt.contains(opt)) {
         auto VALUE = m_gollumOpt.contains(opt) ? m_gollumOpt[opt] : WSRULE.value().m_layoutopts.at(opt);
-        Log::logger->log(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
+        LOG(Log::DEBUG, "[hyprgollum] layoutopt:{} = {}", opt, VALUE);
         Config::INTEGER x;
         Config::INTEGER y;
         CVarList2       args(std::string{VALUE}, 0, ' ', false);
@@ -563,7 +563,7 @@ Config::VEC2 CGollumAlgorithm::getVec2Opt(const std::string& opt) {
             x = std::stol(std::string(args[0]));
             y = std::stol(std::string(args[1]));
             return Config::VEC2(x, y);
-        } catch (std::exception& e) { Log::logger->log(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, VALUE, e.what()); }
+        } catch (std::exception& e) { LOG(Log::ERR, "[hyprgollum] layoutopt:{} = {} is not VEC2: {}", opt, VALUE, e.what()); }
     }
     return *CConfigValue<Config::VEC2>("plugin:gollum:" + opt);
 }
